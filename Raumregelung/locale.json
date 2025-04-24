@@ -1,0 +1,12 @@
+{
+    "translations": {
+        "de": {
+            "Actual temperature":"Ist-Temperatur",
+            "Heating temperature":"Soll-Temperatur",
+            "Basic temperature":"Absenkung",
+            "Heating phase":"Heizphase",
+            "Year":"Jahr",
+            "Total":"Gesamt"
+        }
+    }
+}

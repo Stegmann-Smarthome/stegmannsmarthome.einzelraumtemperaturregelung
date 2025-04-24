@@ -1,0 +1,9 @@
+{
+    "translations": {
+        "de": {
+            "Heating status":"Heizung",
+            "Vacation mode":"Urlaub",
+            "Frost protection":"Frostschutztemperatur"
+        }
+    }
+}
