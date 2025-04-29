@@ -2,13 +2,25 @@
     "elements": [
         {
             "type": "SelectVariable",
-            "name": "ID-Aktor",
+            "name": "ID_Aktor",
             "caption": "Aktor-ID (Auswahl der Soll-Temperatur Variable)"
         },
         {
             "type": "SelectVariable",
-            "name": "Is-Temperature",
+            "name": "Is_Temperature",
             "caption": "Sensor-ID (Ist-Temperatur)"
+        },
+        {
+            "type": "Select",
+            "name": "Weekly_Schedule_Selection", 
+            "caption": "Wochenplanerstellung",
+            "width": "600px",
+            "options": [
+                { "caption": "Kein Wochenplan / Wochenplan löschen", "value": 0 },
+                { "caption": "Wochenplan: Eine Gruppe: Gesamte Woche (Mo - So)", "value": 1 },
+                { "caption": "Wochenplan: Zwei Gruppen: Arbeitstage (Mo - Fr) und Wochenende (Sa + So)", "value": 2 },
+                { "caption": "Wochenplan: Sieben Gruppen: Eine Gruppe pro Tag", "value": 3 }
+            ]
         }
     ],
     "actions": [

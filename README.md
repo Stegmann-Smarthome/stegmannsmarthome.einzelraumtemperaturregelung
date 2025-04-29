@@ -7,7 +7,7 @@
 4. [Konfigurationsseite](#4-konfigurationsseite)
 5. [Statusvariablen und Profile](#5-statusvariablen-und-profile)
 6. [Bedienung](#6-bedienung)
-6. [Versionshistorie](#6-versionshistorie)
+7. [Versionshistorie](#6-versionshistorie)
 
 ### 1. Funktionsumfang
 
@@ -88,3 +88,4 @@ Slider zum verändern der Soll-Temperatur-Einstellung und die Anzeige der verlin
 
 ### 7. Versionshistorie
 24.04.2025 - Version 1.0
+29.04.2025 - Wochenplan-Feature (zusätzliche Absenkung)
