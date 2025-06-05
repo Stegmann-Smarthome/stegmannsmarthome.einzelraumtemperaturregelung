@@ -32,14 +32,17 @@ Auf der Instanzkonfigurationsseite des Moduls / der Module, gibt es folgende Kon
 Name                 | Typ         | Beschreibung
 -------------------- | ----------- | ------------------------------------------------------
 Frostschutztemperatur| Boolean     | Temperatur bei deaktiviertem Heizmodus + Urlaubsmodus
-Aktoren              | Boolean     | Auswahl der IDs mit Soll-Werte aus den zuvor erstellen Aktor-Instanzen
 
 #### Instanzkonfigurationsseite: Einzelraumtemperaturregelung Aktor
 
-Name                 | Typ         | Beschreibung
--------------------- | ----------- | ------------------------------------------------------
-Ist-Temperatur       | Float       | Auswahl der ID, der Variable mit dem aktuellen Temperaturwert
-Soll-Temperatur      | Link        | Auswahl der ID, der die aktuelle Raumtemperatur misst
+Name                            | Beschreibung
+--------------------            | --------------------------------------------------------------------
+Ist-Temperatur                  | Auswahl der ID, der Variable mit dem aktuellen Temperaturwert
+Soll-Temperatur                 | Auswahl der ID, der die aktuelle Raumtemperatur misst
+Einstellungen-Modul             | Auswahl der erstellten Einzelraumtemperaturregelung: Einstellungen
+Wochenplanerstellung            | Erstellung zur Auswahl eines Wochenplans
+Variable: Aktueller Heizstatus  | Zum Ein- und Ausblenden der Variablen "Heizphase" im Webfrontend
+
 
 ### 5. Statusvariablen und Profile
 
@@ -59,8 +62,10 @@ Urlaub               | Boolean     | Urlaub Ein/Aus
 
 Name                 | Typ         | Beschreibung
 -------------------- | ----------- | ------------------------------------------------------
-Ist-Temperatur       | Float       | Aktuelle Temperatur des Temperatursensors
-Soll-Temperatur      | Link        | Gewünschte Temperatur die gesetzt werden soll
+Ist-Temperatur       | Link        | Aktuelle Temperatur des Temperatursensors
+Soll-Temperatur      | Float       | Gewünschte Temperatur die gesetzt werden soll
+Absenken             | Float       | Wert um den die Soll-Temperatur abgesenkt werden soll wenn die Heizphase "Absenken" aktiv ist
+Heizphase            | Integer     | Anzeige einer Variablen, welche die aktuelle Heizphase anzeigt
 
 #### Profile: Einzelraumtemperaturregelung Einstellungen
 
@@ -72,7 +77,7 @@ Name                        | Typ
 
 Name                        | Typ
 --------------------------- | -------
------                       | -----
+SS.ETR.Heizphase            | Integer
 
 ### 6. Bedienung
 

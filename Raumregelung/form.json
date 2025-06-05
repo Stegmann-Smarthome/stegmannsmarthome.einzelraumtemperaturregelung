@@ -11,6 +11,12 @@
             "caption": "Sensor-ID (Ist-Temperatur)"
         },
         {
+            "type": "SelectInstance",
+            "name": "SettingsModuleID",
+            "caption": "Einstellungen-Modul",
+            "moduleID": "CCE036BE-D899-E518-5286-C6713EE3DF00"
+        },
+        {
             "type": "Select",
             "name": "Weekly_Schedule_Selection", 
             "caption": "Wochenplanerstellung",
@@ -21,6 +27,11 @@
                 { "caption": "Wochenplan: Zwei Gruppen: Arbeitstage (Mo - Fr) und Wochenende (Sa + So)", "value": 2 },
                 { "caption": "Wochenplan: Sieben Gruppen: Eine Gruppe pro Tag", "value": 3 }
             ]
+        },   
+        {
+            "type": "CheckBox",
+            "name": "Actual_Heating_Phase",
+            "caption": "Variable: Aktueller Heizstatus"
         }
     ],
     "actions": [

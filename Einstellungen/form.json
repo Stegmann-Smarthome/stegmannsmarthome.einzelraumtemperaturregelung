@@ -2,30 +2,11 @@
     "elements": [
         {
             "type": "NumberSpinner",
-            "name": "frost_protection_form",
+            "name": "FrostProtection",
             "value": "",
             "caption": "Frostschutztemperatur",
-            "suffix": "Grad",
+            "suffix": "°C",
             "minimum": "5"
-        },
-        {
-            "type": "List",
-            "name": "actor_list",
-            "caption": "Auswahl der Soll-Temperatur-Variablen der erstellen Aktor-Instanzen",
-            "rowCount": 5,
-            "add": true,
-            "delete": true,
-            "columns": [
-                {
-                    "caption": "Instanz-ID",
-                    "name": "InstanceID",
-                    "width": "500px",
-                    "add": 0,
-                    "edit": {
-                        "type": "SelectVariable"
-                    }
-                }
-            ]
         }
     ],
     "actions": [
