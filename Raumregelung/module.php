@@ -6,6 +6,17 @@ class Aktor extends IPSModule
     {
         parent::Create();
 
+        ############################# Erstellen von neuen Variablenprofilen ##############################
+        // Erstellung eines Variablenprofils für die Heizphase inklusive Zuweisung eines Icons
+        if (!IPS_VariableProfileExists("SS.ETR.Heizphase")) {
+            IPS_CreateVariableProfile("SS.ETR.Heizphase", 1); // 1 = Integer
+            IPS_SetVariableProfileAssociation("SS.ETR.Heizphase", 0, "Heizen", "", 0xFF0000);
+            IPS_SetVariableProfileAssociation("SS.ETR.Heizphase", 1, "Absenken", "", 0xFF7F00);
+            IPS_SetVariableProfileAssociation("SS.ETR.Heizphase", 2, "Frostschutz", "", 0x0000FF);
+            IPS_SetVariableProfileAssociation("SS.ETR.Heizphase", 3, "-", "", 0xFFFFFF);
+            IPS_SetVariableProfileIcon("SS.ETR.Heizphase", "calendar-range");
+        }
+
         ##############################
         // 1. Soll-Temperatur-Variablen (Slider)
         $this->RegisterVariableFloat(
