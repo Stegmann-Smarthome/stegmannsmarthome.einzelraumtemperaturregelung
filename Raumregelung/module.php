@@ -56,6 +56,13 @@ class Aktor extends IPSModule
         // f) Soll die Variable für die aktuelle Heizphase angezeigt werden?
         $this->RegisterPropertyBoolean("Actual_Heating_Phase", false);
 
+        // g) Fenster- und Türenvariablen
+        $this->RegisterPropertyString('window_sensor', json_encode([]));
+
+        // h) Absenktemperatur bei geöffnetem Fenster- oder Türe
+        $this->RegisterPropertyFloat('windowdoor_temperature', 10.0);
+
+
         ##############################
         // 3. Attribute zum Speichern alter Werte
 
@@ -71,6 +78,9 @@ class Aktor extends IPSModule
         // d) IDs der Boolean-Variablen aus Modul 1
         $this->RegisterAttributeInteger("HeatingStatusVarID", 0);
         $this->RegisterAttributeInteger("VacationStatusVarID", 0);
+
+        // e) Backup-Sollwert für den Aktor für Fenster-Türkontakt
+        $this->RegisterAttributeFloat('BackupWindowTemp', 0.0);
     }
 
     public function ApplyChanges()
@@ -157,6 +167,26 @@ class Aktor extends IPSModule
                 IPS_DeleteVariable($id);
             }
         }
+
+        # 5. Auslesen und registrieren von Änderungen an der Tür- und Fensterauswahl
+        // Auslesen und Dekodieren der Tabelle
+        $json   = $this->ReadPropertyString('window_sensor');
+        $entries = json_decode($json, true);
+
+        // Beispiel: für jeden Eintrag das Feld "InstanceID" holen
+        foreach ($entries as $row) {
+        $instanceID = $row['InstanceID'];
+            if (IPS_VariableExists($instanceID)) {
+            $this->RegisterMessage($instanceID, VM_UPDATE);
+            }
+        }
+
+
+        # 6. Registrieren von Änderungen an der Abesenktemperatur für Tür- und Fensterkontakte
+        $openTemp = $this->ReadPropertyFloat('windowdoor_temperature');
+
+
+    
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -166,6 +196,7 @@ class Aktor extends IPSModule
         $planID        = $this->ReadAttributeInteger("HeatingPlanID");
         $actorID       = $this->ReadPropertyInteger("ID_Aktor");
         $frostschutz   = $this->ReadPropertyFloat("FrostProtection");
+
     
         if ($Message === VM_UPDATE && ($SenderID === $heatingVarID || $SenderID === $vacationVarID)) {
             $heatingActive  = GetValue($heatingVarID);
@@ -277,8 +308,51 @@ class Aktor extends IPSModule
                 $this->UpdateHeatingPhaseVariable($sourcePlanID);
             }
         }
+
+
+        // 6. Änderungen an Fenster-/Türsensoren behandeln
+        // --- Sensor-IDs einmalig holen ---
+        $entries   = json_decode($this->ReadPropertyString('window_sensor'), true);
+        $sensorIDs = is_array($entries) ? array_column($entries, 'InstanceID') : [];
+
+        $heatingActive  = GetValue($heatingVarID);
+        $vacationActive = GetValue($vacationVarID);
+
+
+        // --- SOFORT ABBRECHEN, wenn es kein VM_UPDATE von einem Deiner Sensor-Variablen ist ---
+        if ($Message   !== VM_UPDATE || !in_array($SenderID, $sensorIDs) || !$heatingActive ||  $vacationActive) {
+            // erst hier nach Heizungs-/Wochenplan-Updates weitermachen …
+            parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+            return;
+        }
+
+        // --- Ab hier: garantiert ein Fenster-/Türsensor-Update ---
+        $windowOpen = GetValue($SenderID);          // true=open, false=closed
+        $tempVarID  = $this->GetIDForIdent('set_heating_temperature');
+        if ($tempVarID === false || !IPS_VariableExists($tempVarID)) {
+            return; // Slider‐Variable nicht gefunden
+        }
+
+        if ($windowOpen) {
+            // Fenster auf: Backup + 10 °C setzen
+            $current = GetValue($tempVarID);
+            $this->WriteAttributeFloat('BackupWindowTemp', $current);
+            $openTemp  = $this->ReadPropertyFloat('windowdoor_temperature');
+            RequestAction($tempVarID, $openTemp);
+            IPS_LogMessage('Raumregelung', "Fenster offen: Backup {$current}°C → setze {$openTemp} °C");
+        }
+        else {
+            // Fenster zu: Backup zurücksetzen
+            $backup = $this->ReadAttributeFloat('BackupWindowTemp');
+            if ($backup !== null) {
+                RequestAction($tempVarID, $backup);
+                IPS_LogMessage('Raumregelung', "Fenster zu: stelle Backup {$backup}°C wieder her");
+            }
+        }
+        
+
     
-        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+        //parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
     }
     
 

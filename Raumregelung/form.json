@@ -8,7 +8,7 @@
         {
             "type": "SelectVariable",
             "name": "Is_Temperature",
-            "caption": "Sensor-ID (Ist-Temperatur)"
+            "caption": "Ist-Temperatur (Temperatursensor-ID)"
         },
         {
             "type": "SelectInstance",
@@ -32,6 +32,34 @@
             "type": "CheckBox",
             "name": "Actual_Heating_Phase",
             "caption": "Variable: Aktueller Heizstatus"
+        },
+        {
+            "type": "List",
+            "name": "window_sensor",
+            "caption": "Auswahl Tür- & Fenstersensoren",
+            "rowCount": 5,
+            "add": true,
+            "delete": true,
+            "columns": [
+                {
+                    "caption": "Instanz-ID",
+                    "name": "InstanceID",
+                    "width": "500px",
+                    "add": 0,
+                    "edit": {
+                        "type": "SelectVariable"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "windowdoor_temperature",
+            "value": "",
+            "caption": "Absenktemperatur bei geöffnetem Fenster- und / oder Türkontakt",
+            "suffix": "°C",
+            "minimum": "5",
+            "width":"500px"
         }
     ],
     "actions": [
