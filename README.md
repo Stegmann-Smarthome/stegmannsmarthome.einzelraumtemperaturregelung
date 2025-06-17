@@ -43,7 +43,8 @@ Einstellungen-Modul             | Auswahl der erstellten Einzelraumtemperaturreg
 Wochenplanerstellung            | Erstellung zur Auswahl eines Wochenplans
 Variable: Aktueller Heizstatus  | Zum Ein- und Ausblenden der Variablen "Heizphase" im Webfrontend
 Auswahl Tür- & Fenstersensoren  | Zum auswählen der Tür- / Fenstersensoren die ausgewertet werden sollen
-Absenktemperatur bei geöffnetem Fenster- und / oder Türkontakt | Angabe der Temperatur auf die Abgesenkt werden soll
+Tür- und Fensterkontakt: Absenktemperatur | Angabe der Temperatur auf die Abgesenkt werden soll
+Tür- und Fensterkontakt: Meldeverzögerung | Angabe nach welcher Zeit die Temperatur auf die Absenktemperatur gesetzt werden soll
 
 
 ### 5. Statusvariablen und Profile
@@ -68,6 +69,7 @@ Ist-Temperatur       | Link        | Aktuelle Temperatur des Temperatursensors
 Soll-Temperatur      | Float       | Gewünschte Temperatur die gesetzt werden soll
 Absenken             | Float       | Wert um den die Soll-Temperatur abgesenkt werden soll wenn die Heizphase "Absenken" aktiv ist
 Heizphase            | Integer     | Anzeige einer Variablen, welche die aktuelle Heizphase anzeigt
+Kontakt              | Boolean     | Anzeige ob einer der zugeordneten Kontakte aktuell geöffnet ist
 
 #### Profile: Einzelraumtemperaturregelung Einstellungen
 

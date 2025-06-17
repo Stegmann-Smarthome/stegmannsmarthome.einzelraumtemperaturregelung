@@ -2,13 +2,13 @@
     "elements": [
         {
             "type": "SelectVariable",
-            "name": "ID_Aktor",
-            "caption": "Aktor-ID (Auswahl der Soll-Temperatur Variable)"
-        },
-        {
-            "type": "SelectVariable",
             "name": "Is_Temperature",
             "caption": "Ist-Temperatur (Temperatursensor-ID)"
+        },
+                {
+            "type": "SelectVariable",
+            "name": "ID_Aktor",
+            "caption": "Aktor-ID (Auswahl der Soll-Temperatur Variable)"
         },
         {
             "type": "SelectInstance",
@@ -31,12 +31,17 @@
         {
             "type": "CheckBox",
             "name": "Actual_Heating_Phase",
-            "caption": "Variable: Aktueller Heizstatus"
+            "caption": "Variable: Heizphase"
+        },
+        {
+            "type": "CheckBox",
+            "name": "Windowdoor_Status",
+            "caption": "Variable: Kontakt(e)"
         },
         {
             "type": "List",
             "name": "window_sensor",
-            "caption": "Auswahl Tür- & Fenstersensoren",
+            "caption": "Tür- und Fensterkontakt: Sensoren",
             "rowCount": 5,
             "add": true,
             "delete": true,
@@ -56,10 +61,19 @@
             "type": "NumberSpinner",
             "name": "windowdoor_temperature",
             "value": "",
-            "caption": "Absenktemperatur bei geöffnetem Fenster- und / oder Türkontakt",
+            "caption": "Tür- und Fensterkontakt: Absenktemperatur",
             "suffix": "°C",
             "minimum": "5",
-            "width":"500px"
+            "width":"300px"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "windowdoor_reporting_delay",
+            "value": "",
+            "caption": "Tür- und Fensterkontakt: Meldeverzögerung",
+            "suffix": "Sekunden",
+            "minimum": "0",
+            "width":"300px"
         }
     ],
     "actions": [

@@ -17,6 +17,14 @@ class Aktor extends IPSModule
             IPS_SetVariableProfileIcon("SS.ETR.Heizphase", "calendar-range");
         }
 
+        if (!IPS_VariableProfileExists("SS.ETR.Kontakt")) {
+            IPS_CreateVariableProfile("SS.ETR.Kontakt", 0); // 0 = Boolean
+            IPS_SetVariableProfileAssociation("SS.ETR.Kontakt", false, "Geschlossen", "", 0x00FF00);
+            IPS_SetVariableProfileAssociation("SS.ETR.Kontakt", true, "Offen", "", 0x0000FF);
+            IPS_SetVariableProfileIcon("SS.ETR.Kontakt", "window-maximize");
+        }
+
+
         ##############################
         // 1. Soll-Temperatur-Variablen (Slider)
         $this->RegisterVariableFloat(
@@ -34,6 +42,8 @@ class Aktor extends IPSModule
             2
         );
         $this->EnableAction("set_lowering_temperature");
+
+
 
         ##############################
         // 2. Eigenschaften für das Konfigurationsformular
@@ -62,6 +72,12 @@ class Aktor extends IPSModule
         // h) Absenktemperatur bei geöffnetem Fenster- oder Türe
         $this->RegisterPropertyFloat('windowdoor_temperature', 10.0);
 
+       // i) Meldeverzögerung bei geöffnetem Fenster- oder Türe
+       $this->RegisterPropertyFloat('windowdoor_reporting_delay', 30.0);
+
+        // j) Soll die Variable für den Status der Kontakt angezeigt werden?
+       $this->RegisterPropertyBoolean("Windowdoor_Status", false);
+
 
         ##############################
         // 3. Attribute zum Speichern alter Werte
@@ -81,6 +97,9 @@ class Aktor extends IPSModule
 
         // e) Backup-Sollwert für den Aktor für Fenster-Türkontakt
         $this->RegisterAttributeFloat('BackupWindowTemp', 0.0);
+
+        // f) Timer Registrierung
+        $this->RegisterTimer("WindowOpenTimer", 0, 'IPS_RequestAction(' . $this->InstanceID . ', "WindowOpenTimer", "");');
     }
 
     public function ApplyChanges()
@@ -149,7 +168,7 @@ class Aktor extends IPSModule
         }
 
         ##############################
-        // 4. Anzeige der aktuellen Heizphase, falls aktiviert
+        // 4.1 Anzeige der aktuellen Heizphase, falls aktiviert
         if ($this->ReadPropertyBoolean("Actual_Heating_Phase")) {
             if (@$this->GetIDForIdent("actual_heating_phase") === false) {
                 $id = $this->RegisterVariableInteger(
@@ -168,6 +187,26 @@ class Aktor extends IPSModule
             }
         }
 
+        // 4.2 Anzeige des Fenster-/Tür-Status, falls aktiviert
+        if ($this->ReadPropertyBoolean("Windowdoor_Status")) {
+            if (@$this->GetIDForIdent("windowdoor_status") === false) {
+                $id = $this->RegisterVariableBoolean(
+                    "windowdoor_status",
+                    $this->Translate("opening contact"),
+                    "SS.ETR.Kontakt",
+                    10
+                );
+                IPS_SetIcon($id, "window-closed");  // Du kannst hier auch ein passendes Icon wählen
+                IPS_LogMessage("Raumregelung", "Variable windowdoor_status angelegt.");
+            }
+        } else {
+            $id = @$this->GetIDForIdent("windowdoor_status");
+            if ($id !== false) {
+                IPS_DeleteVariable($id);
+            }
+        }
+
+
         # 5. Auslesen und registrieren von Änderungen an der Tür- und Fensterauswahl
         // Auslesen und Dekodieren der Tabelle
         $json   = $this->ReadPropertyString('window_sensor');
@@ -181,9 +220,11 @@ class Aktor extends IPSModule
             }
         }
 
-
         # 6. Registrieren von Änderungen an der Abesenktemperatur für Tür- und Fensterkontakte
         $openTemp = $this->ReadPropertyFloat('windowdoor_temperature');
+
+        # 7. Registrieren von Änderungen an der Meldeverzögerung für Tür- und Fensterkontakte
+        $reporting_delay = $this->ReadPropertyFloat('windowdoor_reporting_delay');
 
 
     
@@ -328,31 +369,31 @@ class Aktor extends IPSModule
 
         // --- Ab hier: garantiert ein Fenster-/Türsensor-Update ---
         $windowOpen = GetValue($SenderID);          // true=open, false=closed
-        $tempVarID  = $this->GetIDForIdent('set_heating_temperature');
-        if ($tempVarID === false || !IPS_VariableExists($tempVarID)) {
-            return; // Slider‐Variable nicht gefunden
-        }
-
-        if ($windowOpen) {
-            // Fenster auf: Backup + 10 °C setzen
-            $current = GetValue($tempVarID);
-            $this->WriteAttributeFloat('BackupWindowTemp', $current);
-            $openTemp  = $this->ReadPropertyFloat('windowdoor_temperature');
-            RequestAction($tempVarID, $openTemp);
-            IPS_LogMessage('Raumregelung', "Fenster offen: Backup {$current}°C → setze {$openTemp} °C");
-        }
-        else {
-            // Fenster zu: Backup zurücksetzen
-            $backup = $this->ReadAttributeFloat('BackupWindowTemp');
-            if ($backup !== null) {
-                RequestAction($tempVarID, $backup);
-                IPS_LogMessage('Raumregelung', "Fenster zu: stelle Backup {$backup}°C wieder her");
-            }
-        }
         
 
-    
-        //parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+        // Überprüfe alle Fensterkontakte und setze den Status entsprechend
+        $anyWindowOpen = false;
+        foreach ($sensorIDs as $sensorID) {
+            if (GetValue($sensorID)) {
+                $anyWindowOpen = true; // Mindestens ein Fenster ist offen
+                break; // Schleife verlassen, da wir ein offenes Fenster gefunden haben
+            }
+        }
+
+        // Wenn mindestens ein Fenster offen ist, setze `windowdoor_status` auf true
+        if ($anyWindowOpen) {
+            $this->SetValue("windowdoor_status", true);
+            IPS_LogMessage("Raumregelung", "Mindestens ein Fenster ist geöffnet: Status auf true gesetzt.");
+        } else {
+            // Alle Fenster geschlossen → setze `windowdoor_status` auf false
+            $this->SetValue("windowdoor_status", false);
+            IPS_LogMessage("Raumregelung", "Alle Fenster geschlossen: Status auf false gesetzt.");
+        }
+
+        // Fenster geöffnet → Timer starten
+        $delay = $this->ReadPropertyFloat('windowdoor_reporting_delay');
+        $this->SetTimerInterval("WindowOpenTimer", intval($delay * 1000));
+        IPS_LogMessage("Raumregelung", "Fenster geöffnet: Timer gestartet für {$delay} Sekunden.");
     }
     
 
@@ -464,20 +505,8 @@ class Aktor extends IPSModule
         IPS_SetIcon($heatingPlan, "calendar-clock");
 
         // 4. Wochenplan Aktionen anlegen
-        IPS_SetEventScheduleAction(
-            $heatingPlan,
-            0,
-            "Heizen",
-            0xFF0000,
-            "RequestAction({$actorID}, GetValue({$tempVarID1}));"
-        );
-        IPS_SetEventScheduleAction(
-            $heatingPlan,
-            1,
-            "Absenken",
-            0xFF7F00,
-            "RequestAction({$actorID}, GetValue({$tempVarID1}) - GetValue({$tempVarID2}));"
-        );
+        IPS_SetEventScheduleAction($heatingPlan, 0, "Heizen", 0xFF0000, "RequestAction($actorID, GetValue($tempVarID1));");
+        IPS_SetEventScheduleAction($heatingPlan, 1, "Absenken", 0xFF7F00, "RequestAction($actorID, GetValue($tempVarID1)-GetValue($tempVarID2));");
 
         // 5. Jetzt erst die Gruppen definieren (je nach Auswahl Value):
         switch ($Value) {
@@ -554,7 +583,8 @@ class Aktor extends IPSModule
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->SetValue("set_heating_temperature", $Value);
-                    RequestAction($actorID, $Value);
+                    #IPS_LogMessage("Raumregelung", "Heating Temperature {$Value} °C");
+                    //RequestAction($actorID, $Value);
                 }
                 break;
 
@@ -562,8 +592,12 @@ class Aktor extends IPSModule
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->SetValue("set_lowering_temperature", $Value);
+                    #IPS_LogMessage("Raumregelung", "Lowering Temperature {$Value} °C");
                     //RequestAction($actorID, $Value);
                 }
+                break;
+                case "WindowOpenTimer":
+                $this->WindowOpenTimer();
                 break;
         }
     }
@@ -572,40 +606,74 @@ class Aktor extends IPSModule
  * Ermittelt basierend auf Heizungs‐/Urlaubs‐Status und dem Wochenplan die
  * aktuelle Heizphase und schreibt sie in die Variable "actual_heating_phase".
  */
-private function UpdateHeatingPhaseVariable(int $planID)
-{
-    // 1. Heizungs‐ und Urlaubsstatus einlesen
-    $heatingVarID  = $this->ReadAttributeInteger("HeatingStatusVarID");
-    $vacationVarID = $this->ReadAttributeInteger("VacationStatusVarID");
-    $heatingActive  = ($heatingVarID  > 0) ? GetValue($heatingVarID)  : true;
-    $vacationActive = ($vacationVarID > 0) ? GetValue($vacationVarID) : false;
+    private function UpdateHeatingPhaseVariable(int $planID)
+    {
+        // 1. Heizungs‐ und Urlaubsstatus einlesen
+        $heatingVarID  = $this->ReadAttributeInteger("HeatingStatusVarID");
+        $vacationVarID = $this->ReadAttributeInteger("VacationStatusVarID");
+        $heatingActive  = ($heatingVarID  > 0) ? GetValue($heatingVarID)  : true;
+        $vacationActive = ($vacationVarID > 0) ? GetValue($vacationVarID) : false;
 
-    // 2. Default‐Phase = 3 ("aus")
-    $phase = 3;
+        // 2. Default‐Phase = 3 ("aus")
+        $phase = 3;
 
-    if ($heatingActive && !$vacationActive) {
-        // Wenn Plan existiert, aktuellen Action‐ID bestimmen
-        if ($planID > 0 && IPS_EventExists($planID)) {
-            $actionID = $this->GetActiveAction($planID);
-            $phase    = ($actionID !== false ? $actionID : 0);
-        } else {
-            // Kein Plan → aus
-            $phase = 3;
+        if ($heatingActive && !$vacationActive) {
+            // Wenn Plan existiert, aktuellen Action‐ID bestimmen
+            if ($planID > 0 && IPS_EventExists($planID)) {
+                $actionID = $this->GetActiveAction($planID);
+                $phase    = ($actionID !== false ? $actionID : 0);
+            } else {
+                // Kein Plan → aus
+                $phase = 3;
+            }
+        }
+        elseif ($heatingActive && $vacationActive) {
+            // Heizung an, Urlaub an → Frostschutz = Phase 2
+            $phase = 2;
+        }
+        // Sonst: Heizung aus → Phase = 3
+
+        // 3. In die Variable schreiben, falls vorhanden
+        $varID = @$this->GetIDForIdent("actual_heating_phase");
+        if ($varID !== false) {
+            $this->SetValue("actual_heating_phase", $phase);
+            IPS_LogMessage("Raumregelung", "actual_heating_phase → {$phase}");
         }
     }
-    elseif ($heatingActive && $vacationActive) {
-        // Heizung an, Urlaub an → Frostschutz = Phase 2
-        $phase = 2;
-    }
-    // Sonst: Heizung aus → Phase = 3
 
-    // 3. In die Variable schreiben, falls vorhanden
-    $varID = @$this->GetIDForIdent("actual_heating_phase");
-    if ($varID !== false) {
-        $this->SetValue("actual_heating_phase", $phase);
-        IPS_LogMessage("Raumregelung", "actual_heating_phase → {$phase}");
+    public function WindowOpenTimer()
+    {
+        $entries   = json_decode($this->ReadPropertyString('window_sensor'), true);
+        $sensorIDs = is_array($entries) ? array_column($entries, 'InstanceID') : [];
+    
+        // Wenn noch ein Fenster geöffnet ist → Absenkung
+        foreach ($sensorIDs as $id) {
+            if (GetValue($id)) {
+                $tempVarID = $this->GetIDForIdent("set_heating_temperature");
+                if ($tempVarID === false || !IPS_VariableExists($tempVarID)) {
+                    return;
+                }
+    
+                $current = GetValue($tempVarID);
+                $this->WriteAttributeFloat('BackupWindowTemp', $current);
+    
+            // Aktor absenken
+            $openTemp = $this->ReadPropertyFloat('windowdoor_temperature');
+            $actorID = $this->ReadPropertyInteger("ID_Aktor");
+            if ($actorID > 0 && IPS_VariableExists($actorID)) {
+                RequestAction($actorID, $openTemp);
+                ##$this->SetValue("set_heating_temperature", $openTemp); //Soll-Temperatur Slider soll sich nicht verändern
+            }
+    
+                break; // reicht, wenn EIN Fenster offen ist
+            }
+        }
+    
+        // Timer wieder stoppen (einmalig ausführen)
+        $this->SetTimerInterval("WindowOpenTimer", 0);
+        
     }
-}
+
 }
 
 ?>
