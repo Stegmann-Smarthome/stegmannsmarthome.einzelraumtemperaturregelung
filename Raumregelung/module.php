@@ -384,16 +384,26 @@ class Aktor extends IPSModule
         if ($anyWindowOpen) {
             $this->SetValue("windowdoor_status", true);
             IPS_LogMessage("Raumregelung", "Mindestens ein Fenster ist geöffnet: Status auf true gesetzt.");
+
+            // Timer für die Verzögerung starten, wenn ein Fenster geöffnet ist
+            $delay = $this->ReadPropertyFloat('windowdoor_reporting_delay');
+            $this->SetTimerInterval("WindowOpenTimer", intval($delay * 1000));
+            IPS_LogMessage("Raumregelung", "Fenster geöffnet: Timer gestartet für {$delay} Sekunden.");
         } else {
             // Alle Fenster geschlossen → setze `windowdoor_status` auf false
             $this->SetValue("windowdoor_status", false);
             IPS_LogMessage("Raumregelung", "Alle Fenster geschlossen: Status auf false gesetzt.");
-        }
 
-        // Fenster geöffnet → Timer starten
-        $delay = $this->ReadPropertyFloat('windowdoor_reporting_delay');
-        $this->SetTimerInterval("WindowOpenTimer", intval($delay * 1000));
-        IPS_LogMessage("Raumregelung", "Fenster geöffnet: Timer gestartet für {$delay} Sekunden.");
+            // **Temperatur zurücksetzen, wenn alle Fenster geschlossen sind**
+            $backup = $this->ReadAttributeFloat('BackupWindowTemp');
+            if ($backup !== null) {
+                RequestAction($actorID, $backup);
+                IPS_LogMessage('Raumregelung', "Alle Fenster geschlossen: stelle Backup {$backup}°C wieder her");
+            }
+
+            // Timer stoppen, da alle Fenster geschlossen sind
+            $this->SetTimerInterval("WindowOpenTimer", 0);
+        }
     }
     
 
@@ -584,7 +594,7 @@ class Aktor extends IPSModule
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->SetValue("set_heating_temperature", $Value);
                     #IPS_LogMessage("Raumregelung", "Heating Temperature {$Value} °C");
-                    //RequestAction($actorID, $Value);
+                    RequestAction($actorID, $Value);
                 }
                 break;
 
@@ -593,7 +603,7 @@ class Aktor extends IPSModule
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->SetValue("set_lowering_temperature", $Value);
                     #IPS_LogMessage("Raumregelung", "Lowering Temperature {$Value} °C");
-                    //RequestAction($actorID, $Value);
+                    RequestAction($actorID, $Value);
                 }
                 break;
                 case "WindowOpenTimer":
