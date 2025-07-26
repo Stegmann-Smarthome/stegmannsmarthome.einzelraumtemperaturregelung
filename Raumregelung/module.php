@@ -314,6 +314,14 @@ class Aktor extends IPSModule
                 }
                 // Hinweis: Urlaub "aus" während Heizung aus → keine Aktion hier
             }
+
+
+            // === NEU: Slider deaktivieren/aktivieren ===
+            $tempSliderID = $this->GetIDForIdent("set_heating_temperature");
+            if ($tempSliderID !== false && IPS_VariableExists($tempSliderID)) {
+                IPS_SetDisabled($tempSliderID, !$heatingActive);
+            }
+
     
             // 3. Wochenplan an/aus schalten (unabhängig von Backup/Restore)
             if ($planID > 0 && IPS_EventExists($planID)) {
