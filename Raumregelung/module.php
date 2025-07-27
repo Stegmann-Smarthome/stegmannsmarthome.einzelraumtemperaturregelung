@@ -308,7 +308,7 @@ class Aktor extends IPSModule
                         $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
                         if ($linkID !== false && IPS_LinkExists($linkID)) {
                             // Deaktivieren (grau darstellen im Management-Console)
-                            IPS_SetDisabled($linkID, !$heatingActive);
+                            IPS_SetDisabled($linkID, true);
                         }
                     }
                 }
@@ -332,7 +332,12 @@ class Aktor extends IPSModule
                             }
                 
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
-                            IPS_SetDisabled($actorID, false);
+
+                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                            if ($linkID !== false && IPS_LinkExists($linkID)) {
+                                // Deaktivieren (grau darstellen im Management-Console)
+                                IPS_SetDisabled($linkID, false);
+                            }
                         }
                     }
                 }
@@ -365,7 +370,11 @@ class Aktor extends IPSModule
                         }
 
                         // Physisches Gerät deaktivieren
-                        IPS_SetDisabled($actorID, true);
+                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                        if ($linkID !== false && IPS_LinkExists($linkID)) {
+                            // Deaktivieren (grau darstellen im Management-Console)
+                            IPS_SetDisabled($linkID, true);
+                        }
                     }
                 }
 
@@ -388,7 +397,12 @@ class Aktor extends IPSModule
                             }
                 
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
-                            IPS_SetDisabled($actorID, false);
+                            
+                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                            if ($linkID !== false && IPS_LinkExists($linkID)) {
+                                // Deaktivieren (grau darstellen im Management-Console)
+                                IPS_SetDisabled($linkID, false);
+                            }
                         }
                     }
                 }
