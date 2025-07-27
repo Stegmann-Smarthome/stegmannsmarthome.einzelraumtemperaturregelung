@@ -285,38 +285,30 @@ class Aktor extends IPSModule
                 // Fall A: Heizung wurde auf "aus" gesetzt (und kein Urlaub aktiv) → Backup + Frostschutz
                 if ($heatingActive === false && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        // ===== Änderung: Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
-                        $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
+                        // ===== Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
+                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                        if ($linkID !== false) {
+                            $info     = IPS_GetLink($linkID);
+                            $targetID = $info['TargetID'];
+                            $currentValue = ($targetID > 0 ? GetValue($targetID) : 0.0);
+                            if ($currentValue !== $frostschutz) {
+                                $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
+                                IPS_LogMessage("Raumregelung", "Backupwert gesichert (Heizung aus): {$currentValue}");
+                            } else {
+                                IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
+                            }
 
-
-                        $link       = IPS_GetLink($tempVarID1);
-                        $tempVarID1 = $link['TargetID'];
-
-
-                        $currentValue = ($tempVarID1 > 0 ? GetValue($tempVarID1) : 0.0);
-                        if ($currentValue !== $frostschutz) {
-                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Heizung aus): {$currentValue}");
-                        } else {
-                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
+                            // Frostschutz über RequestAction auf Target setzen
+                            if ($targetID > 0 && IPS_VariableExists($targetID)) {
+                                RequestAction($targetID, $frostschutz);
+                            }
                         }
-    
-                        // Frostschutz setzen
-                        RequestAction($actorID, $frostschutz);
-                        
-                        
-                        
-                        $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        $link       = IPS_GetLink($tempVarID1);
-                        $tempVarID1 = $link['TargetID'];
-                        
-                        
 
-
-                        SetValue($tempVarID1, $frostschutz);
+                        // Physisches Gerät deaktivieren
                         IPS_SetDisabled($actorID, true);
                     }
                 }
+
                 // Fall B: Heizung wurde auf "an" gesetzt (und kein Urlaub aktiv) → Restore des Backups
                 elseif ($heatingActive === true && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
@@ -341,33 +333,34 @@ class Aktor extends IPSModule
             // 2.2 Urlaubs-Status geändert (Sender ist vacationVarID)
             if ($SenderID === $vacationVarID) {
                 // Fall C: Urlaub wurde eingeschaltet (und Heizung ist an) → Backup + Frostschutz
+                // Fall C: Urlaub wurde eingeschaltet (und Heizung ist an) → Backup + Frostschutz
                 if ($vacationActive === true && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        // ===== Änderung: Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
+                        // ===== Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
+                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                        if ($linkID !== false) {
+                            $info        = IPS_GetLink($linkID);
+                            $targetID    = $info['TargetID'];
+                            $currentValue = ($targetID > 0 ? GetValue($targetID) : 0.0);
 
-                        $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        $link       = IPS_GetLink($tempVarID1);
-                        $tempVarID1 = $link['TargetID'];
+                            if ($currentValue !== $frostschutz) {
+                                $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
+                                IPS_LogMessage("Raumregelung", "Backupwert gesichert (Urlaub an): {$currentValue}");
+                            } else {
+                                IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
+                            }
 
-                        
-                        $currentValue = 0.0;
-                        if ($tempVarID1 > 0) {
-                            $currentValue = GetValue($tempVarID1);
+                            // Frostschutz über RequestAction auf Target setzen
+                            if ($targetID > 0 && IPS_VariableExists($targetID)) {
+                                RequestAction($targetID, $frostschutz);
+                            }
                         }
 
-                        if ($currentValue !== $frostschutz) {
-                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Urlaub an): {$currentValue}");
-                        } else {
-                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
-                        }
-    
-                        // Frostschutz setzen
-                        RequestAction($actorID, $frostschutz);
-                        SetValue($tempVarID1, $frostschutz);
+                        // Physisches Gerät deaktivieren
                         IPS_SetDisabled($actorID, true);
                     }
                 }
+
                 // Fall D: Urlaub wurde ausgeschaltet (und Heizung ist an) → Restore des Backups
                 elseif ($vacationActive === false && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
