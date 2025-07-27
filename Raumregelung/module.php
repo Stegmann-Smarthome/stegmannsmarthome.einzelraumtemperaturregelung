@@ -314,14 +314,19 @@ class Aktor extends IPSModule
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
                         $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
                         if (!is_null($backup)) {
+                            // 1) Aktor selbst per RequestAction zurückstellen
                             RequestAction($actorID, $backup);
-
-                            $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            $link       = IPS_GetLink($tempVarID1);
-                            $tempVarID1 = $link['TargetID'];
-                            
-
-                            SetValue($tempVarID1, $backup);
+                
+                            // 2) Restore auch in der Slider‑Variable (Link‑Target) per RequestAction
+                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                            if ($linkID !== false) {
+                                $info     = IPS_GetLink($linkID);
+                                $targetID = $info['TargetID'];
+                                if ($targetID > 0 && IPS_VariableExists($targetID)) {
+                                    RequestAction($targetID, $backup);
+                                }
+                            }
+                
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
                             IPS_SetDisabled($actorID, false);
                         }
@@ -332,7 +337,6 @@ class Aktor extends IPSModule
     
             // 2.2 Urlaubs-Status geändert (Sender ist vacationVarID)
             if ($SenderID === $vacationVarID) {
-                // Fall C: Urlaub wurde eingeschaltet (und Heizung ist an) → Backup + Frostschutz
                 // Fall C: Urlaub wurde eingeschaltet (und Heizung ist an) → Backup + Frostschutz
                 if ($vacationActive === true && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
@@ -366,13 +370,19 @@ class Aktor extends IPSModule
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
                         $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
                         if (!is_null($backup)) {
+                            // 1) Aktor zurückstellen
                             RequestAction($actorID, $backup);
-
-                            $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            $link       = IPS_GetLink($tempVarID1);
-                            $tempVarID1 = $link['TargetID'];
-
-                            SetValue($tempVarID1, $backup);
+                
+                            // 2) Slider‑Wert per RequestAction im Link‑Target wiederherstellen
+                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                            if ($linkID !== false) {
+                                $info     = IPS_GetLink($linkID);
+                                $targetID = $info['TargetID'];
+                                if ($targetID > 0 && IPS_VariableExists($targetID)) {
+                                    RequestAction($targetID, $backup);
+                                }
+                            }
+                
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
                             IPS_SetDisabled($actorID, false);
                         }
