@@ -672,10 +672,18 @@ class Aktor extends IPSModule
         switch ($Ident) {
             case "Link_Soll_Temperatur":
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
-                if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                    $this->SetValue("Link_Soll_Temperatur", $Value);
-                    #IPS_LogMessage("Raumregelung", "Heating Temperature {$Value} °C");
-                    RequestAction($actorID, $Value);
+                // Link‑ID holen
+                $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                if ($linkID > 0) {
+                    $link = IPS_GetLink($linkID);
+                    $targetID = $link['TargetID'];
+                    // Nur wenn Ziel existiert, Wert setzen
+                    if ($targetID > 0 && IPS_VariableExists($targetID)) {
+                        // auf Ziel schreiben, nicht auf den Link
+                        SetValue($targetID, $Value);
+                        // und Hardware‑Aktor anstoßen
+                        RequestAction($targetID, $Value);
+                    }
                 }
                 break;
 
