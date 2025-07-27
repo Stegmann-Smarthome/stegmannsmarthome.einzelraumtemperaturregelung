@@ -108,7 +108,7 @@ class Aktor extends IPSModule
 
 
         // Entferne alte „Link_Soll_Temperatur“-Variable, falls vorhanden
-        $oldVarID = @$this->GetIDForIdent("Link_Soll_Temperatur");
+        $oldVarID = @$this->GetIDForIdent("set_heating_temperature");
         if ($oldVarID !== false && IPS_VariableExists($oldVarID)) {
             IPS_DeleteVariable($oldVarID);
             IPS_LogMessage("Raumregelung", "Alte Variable Link_Soll_Temperatur gelöscht (ID {$oldVarID}).");
