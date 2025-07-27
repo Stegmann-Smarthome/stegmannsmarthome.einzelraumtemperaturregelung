@@ -364,7 +364,8 @@ class Aktor extends IPSModule
     
                         // Frostschutz setzen
                         RequestAction($actorID, $frostschutz);
-                        SetValue($tempVarID1, $frostschutz);
+                        // in den Modul‑Slider schreiben, nicht in die read‑only Hardware‑Variable
+                        $this->SetValue("Link_Soll_Temperatur", $frostschutz);
                         IPS_SetDisabled($actorID, true);
                     }
                 }
@@ -379,7 +380,8 @@ class Aktor extends IPSModule
                             $link       = IPS_GetLink($tempVarID1);
                             $tempVarID1 = $link['TargetID'];
 
-                            SetValue($tempVarID1, $backup);
+                            // Modul‑Slider aktualisieren
+                            $this->SetValue("Link_Soll_Temperatur", $backup);
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
                             IPS_SetDisabled($actorID, false);
                         }
@@ -672,18 +674,10 @@ class Aktor extends IPSModule
         switch ($Ident) {
             case "Link_Soll_Temperatur":
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
-                // Link‑ID holen
-                $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                if ($linkID > 0) {
-                    $link = IPS_GetLink($linkID);
-                    $targetID = $link['TargetID'];
-                    // Nur wenn Ziel existiert, Wert setzen
-                    if ($targetID > 0 && IPS_VariableExists($targetID)) {
-                        // auf Ziel schreiben, nicht auf den Link
-                        SetValue($targetID, $Value);
-                        // und Hardware‑Aktor anstoßen
-                        RequestAction($targetID, $Value);
-                    }
+                if ($actorID > 0 && IPS_VariableExists($actorID)) {
+                    $this->SetValue("Link_Soll_Temperatur", $Value);
+                    #IPS_LogMessage("Raumregelung", "Heating Temperature {$Value} °C");
+                    RequestAction($actorID, $Value);
                 }
                 break;
 
