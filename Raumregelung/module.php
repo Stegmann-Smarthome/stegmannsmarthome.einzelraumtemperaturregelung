@@ -108,7 +108,7 @@ class Aktor extends IPSModule
 
 
         // Entferne alte „Link_Soll_Temperatur“-Variable, falls vorhanden
-        $oldVarID = @$this->GetIDForIdent("set_heating_temperature");
+        $oldVarID = @$this->GetIDForIdent("Link_Soll_Temperatur");
         if ($oldVarID !== false && IPS_VariableExists($oldVarID)) {
             IPS_DeleteVariable($oldVarID);
             IPS_LogMessage("Raumregelung", "Alte Variable Link_Soll_Temperatur gelöscht (ID {$oldVarID}).");
@@ -303,8 +303,17 @@ class Aktor extends IPSModule
     
                         // Frostschutz setzen
                         RequestAction($actorID, $frostschutz);
-                        // in den Modul‑Slider schreiben, nicht in die read‑only Hardware‑Variable
-                        $this->SetValue("Link_Soll_Temperatur", $frostschutz);
+                        
+                        
+                        
+                        $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
+                        $link       = IPS_GetLink($tempVarID1);
+                        $tempVarID1 = $link['TargetID'];
+                        
+                        
+
+
+                        SetValue($tempVarID1, $frostschutz);
                         IPS_SetDisabled($actorID, true);
                     }
                 }
@@ -314,8 +323,13 @@ class Aktor extends IPSModule
                         $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
                         if (!is_null($backup)) {
                             RequestAction($actorID, $backup);
-                            // Modul‑Slider auf den gesicherten Wert zurücksetzen
-                            $this->SetValue("Link_Soll_Temperatur", $backup);
+
+                            $tempVarID1   = $this->GetIDForIdent("Link_Soll_Temperatur");
+                            $link       = IPS_GetLink($tempVarID1);
+                            $tempVarID1 = $link['TargetID'];
+                            
+
+                            SetValue($tempVarID1, $backup);
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
                             IPS_SetDisabled($actorID, false);
                         }
@@ -348,9 +362,9 @@ class Aktor extends IPSModule
                             IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
                         }
     
+                        // Frostschutz setzen
                         RequestAction($actorID, $frostschutz);
-                        // in den Modul‑Slider schreiben
-                        $this->SetValue("Link_Soll_Temperatur", $frostschutz);
+                        SetValue($tempVarID1, $frostschutz);
                         IPS_SetDisabled($actorID, true);
                     }
                 }
@@ -365,8 +379,7 @@ class Aktor extends IPSModule
                             $link       = IPS_GetLink($tempVarID1);
                             $tempVarID1 = $link['TargetID'];
 
-                            // Modul‑Slider auf Backup zurücksetzen
-                            $this->SetValue("Link_Soll_Temperatur", $backup);
+                            SetValue($tempVarID1, $backup);
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
                             IPS_SetDisabled($actorID, false);
                         }
@@ -378,7 +391,7 @@ class Aktor extends IPSModule
 
             // === NEU: Slider deaktivieren/aktivieren ===
             $tempSliderID = $this->GetIDForIdent("Link_Soll_Temperatur");
-            if ($tempSliderID !== false && IPS_LinkExists($tempSliderID)) {
+            if ($tempSliderID !== false && IPS_VariableExists($tempSliderID)) {
                 IPS_SetDisabled($tempSliderID, !$heatingActive);
             }
 
