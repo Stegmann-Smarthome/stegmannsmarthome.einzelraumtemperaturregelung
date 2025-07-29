@@ -27,13 +27,13 @@ class Aktor extends IPSModule
 
         ##############################
         // 1. Soll-Temperatur-Variablen (Slider)
-        // $this->RegisterVariableFloat(
-        //     "Link_Soll_Temperatur",
-        //     $this->Translate("Heating temperature"),
-        //     ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 15, 'MAX' => 25],
-        //     1
-        // );
-        // $this->EnableAction("Link_Soll_Temperatur");
+        $this->RegisterVariableFloat(
+            "set_heating_temperature",
+            $this->Translate("Heating temperature"),
+            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 15, 'MAX' => 25],
+            1
+        );
+        $this->EnableAction("set_heating_temperature");
 
         $this->RegisterVariableFloat(
             "set_lowering_temperature",
@@ -106,15 +106,6 @@ class Aktor extends IPSModule
     {
         parent::ApplyChanges();
 
-
-        // Entferne alte „Link_Soll_Temperatur“-Variable, falls vorhanden
-        $oldVarID = @$this->GetIDForIdent("Link_Soll_Temperatur");
-        if ($oldVarID !== false && IPS_VariableExists($oldVarID)) {
-            IPS_DeleteVariable($oldVarID);
-            IPS_LogMessage("Raumregelung", "Alte Variable Link_Soll_Temperatur gelöscht (ID {$oldVarID}).");
-        }
-
-
         ##############################
         // 1. Wochenplan anlegen/aktualisieren, falls sich die Auswahl geändert hat
         $currentPlan = $this->ReadPropertyInteger("Weekly_Schedule_Selection");
@@ -158,7 +149,6 @@ class Aktor extends IPSModule
         // 3. Link für Ist-Temperatur anlegen/aktualisieren
         $linkID   = @$this->GetIDForIdent("Link_Ist_Temperatur");
         $targetID = $this->ReadPropertyInteger("Is_Temperature");
-
         if ($linkID !== false && (!IPS_VariableExists($targetID) || $targetID === 0)) {
             IPS_DeleteLink($linkID);
             $linkID = false;
@@ -176,33 +166,6 @@ class Aktor extends IPSModule
             IPS_SetLinkTargetID($linkID, $targetID);
             IPS_SetVariableCustomProfile($targetID, "~Temperature");
         }
-
-
-
-        // 3a. Link für Soll‑Temperatur (physische Aktor‑Variable) anlegen/aktualisieren
-        $linkSollID  = @IPS_GetObjectIDByIdent("Link_Soll_Temperatur", $this->InstanceID);
-        $targetSoll  = $this->ReadPropertyInteger("ID_Aktor");  // ID Ihres physischen Aktors
-
-        // Vorhandenen Link löschen, wenn Ziel ungültig
-        if ($linkSollID !== false && (!IPS_VariableExists($targetSoll) || $targetSoll === 0)) {
-            IPS_DeleteLink($linkSollID);
-            $linkSollID = false;
-        }
-        // Neuen Link anlegen, falls noch keiner da ist
-        if ($linkSollID === false && IPS_VariableExists($targetSoll) && $targetSoll > 0) {
-            $linkSollID = IPS_CreateLink();
-            IPS_SetName($linkSollID, "Soll‑Temperatur");
-            IPS_SetParent($linkSollID, $this->InstanceID);
-            IPS_SetLinkTargetID($linkSollID, $targetSoll);
-            IPS_SetIdent($linkSollID, "Link_Soll_Temperatur");
-            IPS_SetPosition($linkSollID, 1);  // Position direkt nach dem Ist‑Link
-        }
-        // Falls Link und Ziel existieren, Ziel-ID synchronisieren
-        if ($linkSollID !== false && IPS_VariableExists($targetSoll) && $targetSoll > 0) {
-            IPS_SetLinkTargetID($linkSollID, $targetSoll);
-            IPS_SetVariableCustomProfile($targetSoll, "~Temperature");
-        }
-
 
         ##############################
         // 4.1 Anzeige der aktuellen Heizphase, falls aktiviert
@@ -285,59 +248,31 @@ class Aktor extends IPSModule
                 // Fall A: Heizung wurde auf "aus" gesetzt (und kein Urlaub aktiv) → Backup + Frostschutz
                 if ($heatingActive === false && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        // ===== Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
-                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        if ($linkID !== false) {
-                            $info     = IPS_GetLink($linkID);
-                            $targetID = $info['TargetID'];
-                            $currentValue = ($targetID > 0 ? GetValue($targetID) : 0.0);
-                            if ($currentValue !== $frostschutz) {
-                                $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                                IPS_LogMessage("Raumregelung", "Backupwert gesichert (Heizung aus): {$currentValue}");
-                            } else {
-                                IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
-                            }
-
-                            // Frostschutz über RequestAction auf Target setzen
-                            if ($targetID > 0 && IPS_VariableExists($targetID)) {
-                                RequestAction($targetID, $frostschutz);
-                            }
+                        // ===== Änderung: Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
+                        $tempVarID1   = $this->GetIDForIdent("set_heating_temperature");
+                        $currentValue = ($tempVarID1 > 0 ? GetValue($tempVarID1) : 0.0);
+                        if ($currentValue !== $frostschutz) {
+                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
+                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Heizung aus): {$currentValue}");
+                        } else {
+                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
                         }
-
-                        // Physisches Gerät deaktivieren
-                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        if ($linkID !== false && IPS_LinkExists($linkID)) {
-                            // Deaktivieren (grau darstellen im Management-Console)
-                            IPS_SetDisabled($linkID, true);
-                        }
+    
+                        // Frostschutz setzen
+                        RequestAction($actorID, $frostschutz);
+                        $this->SetValue("set_heating_temperature", $frostschutz);
+                        IPS_SetDisabled($actorID, true);
                     }
                 }
-
                 // Fall B: Heizung wurde auf "an" gesetzt (und kein Urlaub aktiv) → Restore des Backups
                 elseif ($heatingActive === true && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
                         $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
                         if (!is_null($backup)) {
-                            // 1) Aktor selbst per RequestAction zurückstellen
                             RequestAction($actorID, $backup);
-                
-                            // 2) Restore auch in der Slider‑Variable (Link‑Target) per RequestAction
-                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            if ($linkID !== false) {
-                                $info     = IPS_GetLink($linkID);
-                                $targetID = $info['TargetID'];
-                                if ($targetID > 0 && IPS_VariableExists($targetID)) {
-                                    RequestAction($targetID, $backup);
-                                }
-                            }
-                
+                            $this->SetValue("set_heating_temperature", $backup);
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
-
-                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            if ($linkID !== false && IPS_LinkExists($linkID)) {
-                                // Deaktivieren (grau darstellen im Management-Console)
-                                IPS_SetDisabled($linkID, false);
-                            }
+                            IPS_SetDisabled($actorID, false);
                         }
                     }
                 }
@@ -349,60 +284,31 @@ class Aktor extends IPSModule
                 // Fall C: Urlaub wurde eingeschaltet (und Heizung ist an) → Backup + Frostschutz
                 if ($vacationActive === true && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        // ===== Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
-                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        if ($linkID !== false) {
-                            $info        = IPS_GetLink($linkID);
-                            $targetID    = $info['TargetID'];
-                            $currentValue = ($targetID > 0 ? GetValue($targetID) : 0.0);
-
-                            if ($currentValue !== $frostschutz) {
-                                $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                                IPS_LogMessage("Raumregelung", "Backupwert gesichert (Urlaub an): {$currentValue}");
-                            } else {
-                                IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
-                            }
-
-                            // Frostschutz über RequestAction auf Target setzen
-                            if ($targetID > 0 && IPS_VariableExists($targetID)) {
-                                RequestAction($targetID, $frostschutz);
-                            }
+                        // ===== Änderung: Backup aus Modul-Slider, nur wenn Slider ≠ Frostschutz =====
+                        $tempVarID1   = $this->GetIDForIdent("set_heating_temperature");
+                        $currentValue = ($tempVarID1 > 0 ? GetValue($tempVarID1) : 0.0);
+                        if ($currentValue !== $frostschutz) {
+                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
+                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Urlaub an): {$currentValue}");
+                        } else {
+                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
                         }
-
-                        // Physisches Gerät deaktivieren
-                        $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                        if ($linkID !== false && IPS_LinkExists($linkID)) {
-                            // Deaktivieren (grau darstellen im Management-Console)
-                            IPS_SetDisabled($linkID, true);
-                        }
+    
+                        // Frostschutz setzen
+                        RequestAction($actorID, $frostschutz);
+                        $this->SetValue("set_heating_temperature", $frostschutz);
+                        IPS_SetDisabled($actorID, true);
                     }
                 }
-
                 // Fall D: Urlaub wurde ausgeschaltet (und Heizung ist an) → Restore des Backups
                 elseif ($vacationActive === false && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
                         $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
                         if (!is_null($backup)) {
-                            // 1) Aktor zurückstellen
                             RequestAction($actorID, $backup);
-                
-                            // 2) Slider‑Wert per RequestAction im Link‑Target wiederherstellen
-                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            if ($linkID !== false) {
-                                $info     = IPS_GetLink($linkID);
-                                $targetID = $info['TargetID'];
-                                if ($targetID > 0 && IPS_VariableExists($targetID)) {
-                                    RequestAction($targetID, $backup);
-                                }
-                            }
-                
+                            $this->SetValue("set_heating_temperature", $backup);
                             IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
-                            
-                            $linkID = $this->GetIDForIdent("Link_Soll_Temperatur");
-                            if ($linkID !== false && IPS_LinkExists($linkID)) {
-                                // Deaktivieren (grau darstellen im Management-Console)
-                                IPS_SetDisabled($linkID, false);
-                            }
+                            IPS_SetDisabled($actorID, false);
                         }
                     }
                 }
@@ -411,7 +317,7 @@ class Aktor extends IPSModule
 
 
             // === NEU: Slider deaktivieren/aktivieren ===
-            $tempSliderID = $this->GetIDForIdent("Link_Soll_Temperatur");
+            $tempSliderID = $this->GetIDForIdent("set_heating_temperature");
             if ($tempSliderID !== false && IPS_VariableExists($tempSliderID)) {
                 IPS_SetDisabled($tempSliderID, !$heatingActive);
             }
@@ -590,7 +496,7 @@ class Aktor extends IPSModule
     private function CreateOrUpdateWeeklySchedule(int $Value)
     {
         $actorID    = $this->ReadPropertyInteger("ID_Aktor");
-        $tempVarID1 = $this->GetIDForIdent("Link_Soll_Temperatur");
+        $tempVarID1 = $this->GetIDForIdent("set_heating_temperature");
         $tempVarID2 = $this->GetIDForIdent("set_lowering_temperature");
 
         // 1. Alten Plan löschen, falls vorhanden
@@ -691,10 +597,10 @@ class Aktor extends IPSModule
     public function RequestAction($Ident, $Value)
     {
         switch ($Ident) {
-            case "Link_Soll_Temperatur":
+            case "set_heating_temperature":
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                    $this->SetValue("Link_Soll_Temperatur", $Value);
+                    $this->SetValue("set_heating_temperature", $Value);
                     #IPS_LogMessage("Raumregelung", "Heating Temperature {$Value} °C");
                     RequestAction($actorID, $Value);
                 }
@@ -761,7 +667,7 @@ class Aktor extends IPSModule
         // Wenn noch ein Fenster geöffnet ist → Absenkung
         foreach ($sensorIDs as $id) {
             if (GetValue($id)) {
-                $tempVarID = $this->GetIDForIdent("Link_Soll_Temperatur");
+                $tempVarID = $this->GetIDForIdent("set_heating_temperature");
                 if ($tempVarID === false || !IPS_VariableExists($tempVarID)) {
                     return;
                 }
@@ -774,7 +680,7 @@ class Aktor extends IPSModule
             $actorID = $this->ReadPropertyInteger("ID_Aktor");
             if ($actorID > 0 && IPS_VariableExists($actorID)) {
                 RequestAction($actorID, $openTemp);
-                ##$this->SetValue("Link_Soll_Temperatur", $openTemp); //Soll-Temperatur Slider soll sich nicht verändern
+                ##$this->SetValue("set_heating_temperature", $openTemp); //Soll-Temperatur Slider soll sich nicht verändern
             }
     
                 break; // reicht, wenn EIN Fenster offen ist
