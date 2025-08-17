@@ -1,0 +1,12 @@
+{
+    "id": "{8A9B765C-4E44-C1B1-B00B-352414893DD4}",
+    "name": "Einzelraumtemperaturregelung",
+    "author": "Stegmann Smarthome",
+    "url": "",
+    "compatibility": {
+        "version": "8.0"
+    },
+    "version": "1.0.0",
+    "build": 0,
+    "date": 1753483302
+}

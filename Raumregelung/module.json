@@ -1,0 +1,15 @@
+{
+    "id": "{E09F86E8-246D-A5D6-6A7F-3EEDF7E2891E}",
+    "name": "Aktor",
+    "type": 3,
+    "vendor": "Stegmann Smarthome",
+    "aliases": [
+        "Einzelraumtemperaturregelung: Aktor"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "RR",
+    "url": "",
+    "flags": []
+}

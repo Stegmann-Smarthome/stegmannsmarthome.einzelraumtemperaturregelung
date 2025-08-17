@@ -1,0 +1,15 @@
+{
+    "id": "{CCE036BE-D899-E518-5286-C6713EE3DF00}",
+    "name": "Einstellungen",
+    "type": 3,
+    "vendor": "Stegmann Smarthome",
+    "aliases": [
+        "Einzelraumtemperaturregelung: Einstellungen"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "RR",
+    "url": "",
+    "flags": []
+}
