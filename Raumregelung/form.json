@@ -1,20 +1,35 @@
 {
     "elements": [
+         {
+      "type": "RowLayout",
+      "items": [
         {
             "type": "SelectVariable",
             "name": "Is_Temperature",
-            "caption": "Ist-Temperatur (Temperatursensor-ID)"
+            "caption": "Ist-Temperatur / Sensor-ID (Auswahl der Ist-Temperatur Variable)",
+            "width":"600px"
         },
-                {
+        {
+            "type": "Label",
+            "caption": "",
+            "width": "80px"
+        },
+        {
             "type": "SelectVariable",
             "name": "ID_Aktor",
-            "caption": "Aktor-ID (Auswahl der Soll-Temperatur Variable)"
-        },
+            "caption": "Soll-Temperatur / Aktor-ID (Auswahl der Soll-Temperatur Variable)",
+            "width":"600px"
+        }
+     ]
+    },
+
+
         {
             "type": "SelectInstance",
             "name": "SettingsModuleID",
             "caption": "Einstellungen-Modul",
-            "moduleID": "CCE036BE-D899-E518-5286-C6713EE3DF00"
+            "moduleID": "CCE036BE-D899-E518-5286-C6713EE3DF00",
+            "width":"600px"
         },
         {
             "type": "Select",
@@ -27,7 +42,7 @@
                 { "caption": "Wochenplan: Zwei Gruppen: Arbeitstage (Mo - Fr) und Wochenende (Sa + So)", "value": 2 },
                 { "caption": "Wochenplan: Sieben Gruppen: Eine Gruppe pro Tag", "value": 3 }
             ]
-        },   
+        }, 
         {
             "type": "CheckBox",
             "name": "Actual_Heating_Phase",
@@ -36,7 +51,7 @@
         {
             "type": "CheckBox",
             "name": "Windowdoor_Status",
-            "caption": "Variable: Kontakt(e)"
+            "caption": "Variable: Kontakt"
         },
         {
             "type": "List",

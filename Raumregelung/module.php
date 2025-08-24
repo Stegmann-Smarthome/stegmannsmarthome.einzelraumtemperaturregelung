@@ -96,6 +96,8 @@ class Aktor extends IPSModule
             $this->RegisterMessage($planID, EM_CHANGESCHEDULEACTION);
         }
 
+        $this->updateLoweringVisibility();
+
         ##############################
         // 2. MessageSink-Registrierung für Änderungen in Modul 1
         $settingsID     = $this->ReadPropertyInteger("SettingsModuleID");
@@ -118,7 +120,8 @@ class Aktor extends IPSModule
         // --- Slider initial aktiv/deaktiv je nach Heizung/Urlaub ---
         $heatingActiveInit  = ($heatingVarID  > 0) ? GetValue($heatingVarID)  : true;
         $vacationActiveInit = ($vacationVarID > 0) ? GetValue($vacationVarID) : false;
-        $disable = (!$heatingActiveInit || $vacationActiveInit); // ODER-Logik
+
+        $disable = (!$heatingActiveInit || $vacationActiveInit);
 
         if (($id = $this->GetIDForIdent("set_heating_temperature")) !== false && IPS_VariableExists($id)) {
             IPS_SetDisabled($id, $disable);
@@ -126,6 +129,15 @@ class Aktor extends IPSModule
         if (($id = $this->GetIDForIdent("set_lowering_temperature")) !== false && IPS_VariableExists($id)) {
             IPS_SetDisabled($id, $disable);
         }
+
+
+        // === Aktor analog zu den Slidern initial sperren/freigeben ===
+        $actorID = $this->ReadPropertyInteger("ID_Aktor");
+        if ($actorID > 0 && IPS_VariableExists($actorID)) {
+            $disableInit = (!$heatingActiveInit || $vacationActiveInit);
+            IPS_SetDisabled($actorID, $disableInit);
+        }
+
 
         ##############################
         // 3. Link für Ist-Temperatur anlegen/aktualisieren
@@ -290,11 +302,17 @@ class Aktor extends IPSModule
 
             // Slider deaktivieren/aktivieren (Heizung AUS ODER Urlaub AN → deaktiviert)
             $disable = (!$heatingActive || $vacationActive);
+
             if (($id = $this->GetIDForIdent("set_heating_temperature")) !== false && IPS_VariableExists($id)) {
                 IPS_SetDisabled($id, $disable);
             }
             if (($id = $this->GetIDForIdent("set_lowering_temperature")) !== false && IPS_VariableExists($id)) {
                 IPS_SetDisabled($id, $disable);
+            }
+
+            // === NEU: Aktor synchron zu den Slidern sperren/freigeben ===
+            if ($actorID > 0 && IPS_VariableExists($actorID)) {
+                IPS_SetDisabled($actorID, $disable);
             }
 
             // 3. Wochenplan an/aus
@@ -329,13 +347,38 @@ class Aktor extends IPSModule
             }
         }
 
-        // === Externe Änderungen am Aktor (ID_Aktor) -> WebFront spiegeln ===
+        // === Externe Änderungen am Aktor (ID_Aktor):
+        //     - Bei Heizung AN & Urlaub AUS → Werte ins WebFront spiegeln
+        //     - Bei Heizung AUS ODER Urlaub AN → sofort auf Frostschutz zurücksetzen
         if ($Message === VM_UPDATE && $SenderID === $actorID) {
             // Eigene Echos kurzzeitig ignorieren
             if ($this->isRecentActorEchoFromModule(2)) {
                 $this->resetActorWriteMark(); // einmalig löschen
                 return;
             }
+
+        $heatingActive  = ($heatingVarID  > 0) ? GetValue($heatingVarID)  : true;
+        $vacationActive = ($vacationVarID > 0) ? GetValue($vacationVarID) : false;
+
+        // Bei Heizung AUS oder Urlaub AN: jede externe Aktor-Änderung sofort auf Frostschutz zurücksetzen
+        if ($vacationActive || !$heatingActive) {
+            $this->markActorWriteFromModule();
+            RequestAction($actorID, $frostschutz);
+
+            $heatVarID = $this->GetIDForIdent("set_heating_temperature");
+            if ($heatVarID && IPS_VariableExists($heatVarID)) {
+                $this->SetValue("set_heating_temperature", $frostschutz);
+            }
+
+            IPS_LogMessage(
+                "Raumregelung",
+                "Externe Aktor-Änderung verworfen (Heizung AUS/Urlaub AN). Zurückgesetzt auf Frostschutz {$frostschutz}°C."
+            );
+            return; // nichts weiter spiegeln
+        }
+
+
+
 
             $actorValue = (float)GetValue($actorID);
 
@@ -570,10 +613,12 @@ class Aktor extends IPSModule
             IPS_DeleteEvent($existingPlanID);
             $this->WriteAttributeInteger("HeatingPlanID", 0);
             IPS_LogMessage("Raumregelung", "Alter Wochenplan (ID {$existingPlanID}) gelöscht.");
+            $this->updateLoweringVisibility(); // nach Löschung sofort ausblenden
         }
 
         // 2) Auswahl = 0 → keinen neuen Plan anlegen
         if ($selection === 0) {
+            $this->updateLoweringVisibility(); // kein neuer Plan -> ausblenden
             return;
         }
 
@@ -586,6 +631,7 @@ class Aktor extends IPSModule
         IPS_SetEventActive($heatingPlan, true);
         IPS_SetPosition($heatingPlan, 4);
         IPS_SetIcon($heatingPlan, "calendar-clock");
+        $this->updateLoweringVisibility(); // neuer Plan -> einblenden
 
         // 4) Aktionen anlegen – mit Echo-Schutz-Präfix
         $iid = $this->InstanceID;
@@ -767,6 +813,25 @@ class Aktor extends IPSModule
         // Timer wieder stoppen (einmalig ausführen)
         $this->SetTimerInterval("WindowOpenTimer", 0);
     }
+
+
+
+    // Blendet die Variable "set_lowering_temperature" ein/aus je nach vorhandenem Wochenplan
+    private function updateLoweringVisibility(): void
+    {
+        $varID  = @$this->GetIDForIdent("set_lowering_temperature");
+        if ($varID === false) {
+            return; // nicht angelegt
+        }
+
+        // Einblenden nur, wenn ein echter Wochenplan existiert
+        $planID   = $this->ReadAttributeInteger("HeatingPlanID");
+        $hasPlan  = ($planID > 0) && IPS_EventExists($planID);
+
+        IPS_SetHidden($varID, !$hasPlan); // kein Plan => ausblenden
+    }
+
+
 }
 
 ?>
