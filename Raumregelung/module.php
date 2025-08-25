@@ -29,7 +29,7 @@ class Aktor extends IPSModule
         $this->RegisterVariableFloat(
             "set_heating_temperature",
             $this->Translate("Heating temperature"),
-            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 15, 'MAX' => 25],
+            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 12, 'MAX' => 25],
             1
         );
         $this->EnableAction("set_heating_temperature");
@@ -37,7 +37,7 @@ class Aktor extends IPSModule
         $this->RegisterVariableFloat(
             "set_lowering_temperature",
             $this->Translate("Lowering temperature"),
-            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 0, 'MAX' => 5],
+            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 10, 'MAX' => 25],
             2
         );
         $this->EnableAction("set_lowering_temperature");
@@ -66,6 +66,7 @@ class Aktor extends IPSModule
         $this->RegisterAttributeInteger("HeatingPlanID", 0);       // c) ID des Wochenplans
         $this->RegisterAttributeInteger("HeatingStatusVarID", 0);  // d) IDs der Boolean-Variablen aus Modul 1
         $this->RegisterAttributeInteger("VacationStatusVarID", 0);
+        $this->RegisterAttributeFloat("BackupLoweringTemp", 0.0); // Backup-Absenk-Soll
 
         // Timer Registrierung: ident bleibt "WindowOpenTimer"
         $this->RegisterTimer("WindowOpenTimer", 0, 'IPS_RequestAction(' . $this->InstanceID . ', "WindowOpenTimer", "");');
@@ -239,32 +240,77 @@ class Aktor extends IPSModule
                 // A: Heizung aus (kein Urlaub) → Backup + Frostschutz
                 if ($heatingActive === false && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        $tempVarID1   = $this->GetIDForIdent("set_heating_temperature");
-                        $currentValue = ($tempVarID1 > 0 ? GetValue($tempVarID1) : 0.0);
-                        if ($currentValue !== $frostschutz) {
-                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Heizung aus): {$currentValue}");
+                        $heatVarID = $this->GetIDForIdent("set_heating_temperature");
+                        $lowVarID  = $this->GetIDForIdent("set_lowering_temperature");
+
+                        $currentHeat = ($heatVarID > 0 ? (float)GetValue($heatVarID) : 0.0);
+                        $currentLow  = ($lowVarID  > 0 ? (float)GetValue($lowVarID)  : 0.0);
+
+                        // Backups nur sichern, wenn sie sich vom Zielwert unterscheiden
+                        if ($currentHeat !== (float)$frostschutz) {
+                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentHeat);
+                            IPS_LogMessage("Raumregelung", "Backup HEAT (Heizung aus): {$currentHeat}");
                         } else {
-                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
+                            IPS_LogMessage("Raumregelung", "Kein HEAT-Backup (bereits Frostschutz {$currentHeat})");
                         }
 
+                        if ($currentLow !== (float)$frostschutz) {
+                            $this->WriteAttributeFloat("BackupLoweringTemp", $currentLow);
+                            IPS_LogMessage("Raumregelung", "Backup LOW (Heizung aus): {$currentLow}");
+                        } else {
+                            IPS_LogMessage("Raumregelung", "Kein LOW-Backup (bereits Frostschutz {$currentLow})");
+                        }
+
+                        // Aktor und Slider setzen (beide Slider exakt auf FrostProtection)
                         RequestAction($actorID, $frostschutz);
-                        $this->SetValue("set_heating_temperature", $frostschutz);
+                        if ($heatVarID) { $this->SetValue("set_heating_temperature", (float)$frostschutz); }
+                        if ($lowVarID)  { $this->SetValue("set_lowering_temperature", (float)$frostschutz); }
+
                         IPS_SetDisabled($actorID, true);
                     }
                 }
+
                 // B: Heizung an (kein Urlaub) → Restore
                 elseif ($heatingActive === true && $vacationActive === false) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
-                        if (!is_null($backup)) {
-                            RequestAction($actorID, $backup);
-                            $this->SetValue("set_heating_temperature", $backup);
-                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
+                        $backupHeat = $this->ReadAttributeFloat("BackupActorSollTemp");
+                        $backupLow  = $this->ReadAttributeFloat("BackupLoweringTemp");
+
+                        if (!is_null($backupHeat)) {
+                            // Aktuelle Planphase ermitteln
+                            $action = $this->getCurrentPlanActionId(); // -1, 0, 1
+
+                            // Slider zuerst lokal restaurieren
+                            $this->SetValue("set_heating_temperature", $backupHeat);
+
+                            $lowVarID = $this->GetIDForIdent("set_lowering_temperature");
+                            if ($lowVarID && IPS_VariableExists($lowVarID) && !is_null($backupLow)) {
+                                // In Sliderbereich klemmen und (sicherheitshalber) nicht über Heizwert lassen
+                                $restoreLow = max(10.0, min(25.0, (float)$backupLow));
+                                if ($restoreLow > $backupHeat) {
+                                    $restoreLow = $backupHeat;
+                                }
+                                $this->SetValue("set_lowering_temperature", $restoreLow);
+                                IPS_LogMessage("Raumregelung", "LOW-Backup wiederhergestellt: {$restoreLow}");
+                            }
+
+                            // ECHO-Schutz aktivieren und den Aktor passend zur Phase setzen
+                            // Heizen (0/-1) -> Heiz-Backup; Absenken (1) -> Low-Backup
+                            $this->markActorWriteFromModule();
+                            $targetForActor = $backupHeat;
+                            if ($action === 1 && isset($restoreLow)) {
+                                $targetForActor = $restoreLow;
+                            }
+                            RequestAction($actorID, $targetForActor);
+
+                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).");
                             IPS_SetDisabled($actorID, false);
                         }
                     }
                 }
+
+
+
             }
 
             // 2.2 Urlaubs-Status geändert
@@ -272,32 +318,76 @@ class Aktor extends IPSModule
                 // C: Urlaub an (Heizung an) → Backup + Frostschutz
                 if ($vacationActive === true && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        $tempVarID1   = $this->GetIDForIdent("set_heating_temperature");
-                        $currentValue = ($tempVarID1 > 0 ? GetValue($tempVarID1) : 0.0);
-                        if ($currentValue !== $frostschutz) {
-                            $this->WriteAttributeFloat("BackupActorSollTemp", $currentValue);
-                            IPS_LogMessage("Raumregelung", "Backupwert gesichert (Urlaub an): {$currentValue}");
-                        } else {
-                            IPS_LogMessage("Raumregelung", "Kein Backup: Sliderwert ist bereits Frostschutz ({$currentValue})");
-                        }
+                        $heatVarID = $this->GetIDForIdent("set_heating_temperature");
+                        $lowVarID  = $this->GetIDForIdent("set_lowering_temperature");
 
-                        RequestAction($actorID, $frostschutz);
-                        $this->SetValue("set_heating_temperature", $frostschutz);
+                        $currentHeat = ($heatVarID > 0 ? (float)GetValue($heatVarID) : 0.0);
+                        $currentLow  = ($lowVarID  > 0 ? (float)GetValue($lowVarID)  : 0.0);
+
+                    if ($currentHeat !== (float)$frostschutz) {
+                        $this->WriteAttributeFloat("BackupActorSollTemp", $currentHeat);
+                        IPS_LogMessage("Raumregelung", "Backup HEAT (Urlaub an): {$currentHeat}");
+                    } else {
+                        IPS_LogMessage("Raumregelung", "Kein HEAT-Backup (bereits Frostschutz {$currentHeat})");
+                    }
+
+                    if ($currentLow !== (float)$frostschutz) {
+                        $this->WriteAttributeFloat("BackupLoweringTemp", $currentLow);
+                        IPS_LogMessage("Raumregelung", "Backup LOW (Urlaub an): {$currentLow}");
+                    } else {
+                        IPS_LogMessage("Raumregelung", "Kein LOW-Backup (bereits Frostschutz {$currentLow})");
+                    }
+
+                    RequestAction($actorID, $frostschutz);
+                    // beide Slider exakt auf FrostProtection setzen
+                    if ($heatVarID) { $this->SetValue("set_heating_temperature", (float)$frostschutz); }
+                    if ($lowVarID)  { $this->SetValue("set_lowering_temperature", (float)$frostschutz); }
+
+
                         IPS_SetDisabled($actorID, true);
                     }
                 }
+
                 // D: Urlaub aus (Heizung an) → Restore
                 elseif ($vacationActive === false && $heatingActive === true) {
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
-                        $backup = $this->ReadAttributeFloat("BackupActorSollTemp");
-                        if (!is_null($backup)) {
-                            RequestAction($actorID, $backup);
-                            $this->SetValue("set_heating_temperature", $backup);
-                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf gesicherten Wert {$backup} zurückgesetzt.");
+                        $backupHeat = $this->ReadAttributeFloat("BackupActorSollTemp");
+                        $backupLow  = $this->ReadAttributeFloat("BackupLoweringTemp");
+
+                        if (!is_null($backupHeat)) {
+                            // Aktuelle Planphase ermitteln
+                            $action = $this->getCurrentPlanActionId(); // -1, 0, 1
+
+                            // Slider zuerst lokal restaurieren
+                            $this->SetValue("set_heating_temperature", $backupHeat);
+
+                            $lowVarID = $this->GetIDForIdent("set_lowering_temperature");
+                            if ($lowVarID && IPS_VariableExists($lowVarID) && !is_null($backupLow)) {
+                                $restoreLow = max(10.0, min(25.0, (float)$backupLow));
+                                if ($restoreLow > $backupHeat) {
+                                    $restoreLow = $backupHeat;
+                                }
+                                $this->SetValue("set_lowering_temperature", $restoreLow);
+                                IPS_LogMessage("Raumregelung", "LOW-Backup wiederhergestellt: {$restoreLow}");
+                            }
+
+                            // ECHO-Schutz aktivieren und den Aktor passend zur Phase setzen
+                            $this->markActorWriteFromModule();
+                            $targetForActor = $backupHeat;
+                            if ($action === 1 && isset($restoreLow)) {
+                                $targetForActor = $restoreLow;
+                            }
+                            RequestAction($actorID, $targetForActor);
+
+                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).");
                             IPS_SetDisabled($actorID, false);
                         }
                     }
                 }
+
+
+
+
             }
 
             // Slider deaktivieren/aktivieren (Heizung AUS ODER Urlaub AN → deaktiviert)
@@ -397,12 +487,11 @@ class Aktor extends IPSModule
                     }
                     break;
 
-                case 1: // Absenken -> Lowering als Differenz (heating - actor)
+                case 1: // Absenken -> Lowering ist absolut = Aktorwert spiegeln
                     if ($lowVarID && IPS_VariableExists($lowVarID)) {
-                        $newLowering     = max(0.0, $heating - $actorValue);
-                        $newLowering     = min($newLowering, 5.0);
-                        $currentLowering = (float)GetValue($lowVarID);
-                        if (abs($newLowering - $currentLowering) > 0.05) {
+                        // optional Clamp an deinen Slider (MIN=10, MAX=25)
+                        $newLowering = max(10.0, min(25.0, $actorValue));
+                        if (abs($newLowering - (float)GetValue($lowVarID)) > 0.05) {
                             $this->SetValue("set_lowering_temperature", $newLowering);
                         }
                     }
@@ -537,7 +626,7 @@ class Aktor extends IPSModule
 
         $action = $this->getCurrentPlanActionId(); // -1, 0, 1
         if ($action === 1) {
-            return max(0.0, $heating - $lowering);   // Absenkphase
+            return $lowering;  // Absenkphase
         }
         return $heating;                              // Heizen oder konservativ
     }
@@ -647,7 +736,7 @@ class Aktor extends IPSModule
             1,
             "Absenken",
             0xFF7F00,
-            "IPS_RequestAction($iid, \"__MarkActorWriteByModule\", 0); RequestAction({$actorID}, GetValue({$tempVarID1}) - GetValue({$tempVarID2}));"
+            "IPS_RequestAction($iid, \"__MarkActorWriteByModule\", 0); RequestAction({$actorID}, GetValue({$tempVarID2}));"
         );
 
         // 5) Gruppen/Points je nach Auswahl
@@ -710,6 +799,21 @@ class Aktor extends IPSModule
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->SetValue("set_heating_temperature", $Value);
 
+                    // NEU: Konsistenz – Lowering darf nicht über Heating liegen
+                    $lowVarID = $this->GetIDForIdent("set_lowering_temperature");
+                    if ($lowVarID && IPS_VariableExists($lowVarID)) {
+                        $low  = (float)GetValue($lowVarID);
+                        $heat = (float)$Value;
+
+                        // Clamp sicherheitshalber (falls per Script unsinnige Werte drin stehen)
+                        if ($low < 10.0) { $low = 10.0; }
+                        if ($low > 25.0) { $low = 25.0; }
+
+                        if ($low > $heat) {
+                            $this->SetValue("set_lowering_temperature", $heat);
+                        }
+                    }
+
                     // Phasenlogik: nur senden, wenn nicht Action 1 aktiv ist
                     $action = $this->getCurrentPlanActionId(); // -1, 0, 1
                     if ($action === 1) {
@@ -722,10 +826,24 @@ class Aktor extends IPSModule
                 }
                 break;
 
+
             case "set_lowering_temperature":
                 $actorID = $this->ReadPropertyInteger("ID_Aktor");
-                $this->SetValue("set_lowering_temperature", $Value);
 
+                // 1) Clamp auf Sliderbereich 10..25
+                $val = max(10.0, min(25.0, (float)$Value));
+
+                // 2) Lowering darf nie über Heating liegen
+                $heatVarID = $this->GetIDForIdent("set_heating_temperature");
+                $heat      = ($heatVarID && IPS_VariableExists($heatVarID)) ? (float)GetValue($heatVarID) : 25.0;
+                if ($val > $heat) {
+                    $val = $heat;
+                }
+
+                // 3) Speichern
+                $this->SetValue("set_lowering_temperature", $val);
+
+                // 4) Nur in Absenkphase senden
                 $action = $this->getCurrentPlanActionId(); // -1, 0, 1
                 if ($action === 0) {
                     IPS_LogMessage("Raumregelung", "Lowering-Änderung geblockt (Action 0 aktiv).");
@@ -733,16 +851,18 @@ class Aktor extends IPSModule
                 }
 
                 if ($action === 1) {
-                    $heatVarID = $this->GetIDForIdent("set_heating_temperature");
-                    $heat      = ($heatVarID && IPS_VariableExists($heatVarID)) ? (float)GetValue($heatVarID) : 0.0;
-                    $target    = $heat - (float)$Value;
-
                     if ($actorID > 0 && IPS_VariableExists($actorID)) {
                         $this->markActorWriteFromModule();
-                        RequestAction($actorID, $target);
+                        RequestAction($actorID, $val); // absolut & validiert
                     }
                     break;
                 }
+
+                // action === -1 (konservativ: nicht senden)
+                IPS_LogMessage("Raumregelung", "Lowering geändert, aber keine passende Action aktiv – kein Senden.");
+                break;
+
+
 
                 // action === -1 (konservativ: nicht senden)
                 IPS_LogMessage("Raumregelung", "Lowering geändert, aber keine passende Action aktiv – kein Senden.");
