@@ -245,7 +245,7 @@ class Aktor extends IPSModule
                     ],
                     6
                 );
-                IPS_SetIcon($id, "window-closed");
+                IPS_SetIcon($id, "opening contact");
                 IPS_LogMessage("Raumregelung", "Variable windowdoor_status angelegt.");
             }
         } else {
