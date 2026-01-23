@@ -5,10 +5,11 @@
             "Heating temperature":"Soll-Temperatur",
             "Lowering temperature": "Absenken",
             "Basic temperature":"Absenkung",
-            "Heating phase":"Modus",
+            "Heating phase":"Heizphase",
             "Year":"Jahr",
             "Total":"Gesamt",
-            "opening contact":"Kontakt"
+            "opening contact":"Kontakt",
+            "Override":"Übersteuern"
         }
     }
 }

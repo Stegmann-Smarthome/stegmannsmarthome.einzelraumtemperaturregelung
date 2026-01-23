@@ -1,12 +1,72 @@
 {
   "elements": [
+        {
+      "type": "Label",
+      "caption": "1. Heizungsregelung",
+      "bold": true
+    },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "Select",
+              "name": "HeatingControlType",
+              "caption": "Regelungstyp",
+              "width": "600px",
+              "options": [
+                { "caption": "Automtische Regelung", "value": 0 },
+                { "caption": "2-Punkt-Regelung", "value": 1 }
+              ]
+            },
+            {
+              "type": "Label",
+              "caption": "",
+              "width": "80px"
+            },
+          {
+          "type": "NumberSpinner",
+          "name": "SwitchHysteresis",
+          "value": "",
+          "caption": "Hysterese",
+          "suffix": "°C",
+          "minimum": "0",
+          "digits": 1,
+          "width": "300px"
+          } 
+          ]
+        },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "Invert_SwitchAktor",
+          "caption": "Schaltaktor: Logik invertieren",
+          "width": "600px"
+        }  
+      ]
+    },
+            {
+          "type": "Label",
+          "caption": ""
+        },
+                    {
+          "type": "Label",
+          "caption": ""
+        },
+    {
+      "type": "Label",
+      "caption": "2. Variablenauswahl + Wochenplan",
+      "bold": true
+    },
     {
       "type": "RowLayout",
       "items": [
         {
           "type": "SelectVariable",
           "name": "Is_Temperature",
-          "caption": "Ist-Temperatur / Sensor-ID (Auswahl der Ist-Temperatur Variable)",
+          "caption": "Ist-Temperatur: Sensor-ID - Auswahl der Ist-Temperatur Variable (Float)",
+          "validVariableTypes": [2],
           "width": "600px"
         },
         {
@@ -26,18 +86,27 @@
     {
       "type": "RowLayout",
       "items": [
-        {
+                {
           "type": "SelectVariable",
           "name": "ID_Aktor",
-          "caption": "Soll-Temperatur / Aktor-ID (Auswahl der Soll-Temperatur Variable)",
+          "caption": "Soll-Temperatur: Sollwert-ID - Auswahl der Soll-Temperatur Variable (Float)",
+          "validVariableTypes": [2],
           "width": "600px"
         },
-        {
+                {
+          "type": "SelectVariable",
+          "name": "ID_SwitchAktor",
+          "caption": "Schaltaktor: Aktor-ID - Auswahl der Schaltaktor Variable (Boolean)",
+          "validVariableTypes": [0],
+          "width": "600px"
+        },
+                {
           "type": "Label",
           "caption": "",
           "width": "80px"
         },
-        {
+
+                {
           "type": "Select",
           "name": "Weekly_Schedule_Selection",
           "caption": "Wochenplanerstellung",
@@ -52,41 +121,20 @@
       ]
     },
     {
-            "type": "ColumnLayout",
-            "items": [
-                            {
           "type": "Label",
           "caption": "",
           "width": "80px"
         },
-                                    {
+        {
           "type": "Label",
           "caption": "",
           "width": "80px"
         },
     {
-      "type": "CheckBox",
-      "name": "Actual_Heating_Phase",
-      "caption": "Variable: Heizphase"
+      "type": "Label",
+      "caption": "3. Öffnungskontakte (Fenster & Türen)",
+      "bold": true
     },
-    {
-      "type": "CheckBox",
-      "name": "Windowdoor_Status",
-      "caption": "Variable: Kontakt"
-    },
-                            {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
-                                    {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        }
-
-]
-},
     {
       "type": "RowLayout",
       "items": [
@@ -133,7 +181,7 @@
               "type": "NumberSpinner",
               "name": "windowdoor_reporting_delay",
               "value": "",
-              "caption": "Tür- und Fensterkontakt: Meldeverzögerung",
+              "caption": "Tür- und Fensterkontakt: Absenkverzögerung",
               "suffix": "Sekunden",
               "minimum": "0",
               "width": "300px"
@@ -141,7 +189,73 @@
           ]
         }
       ]
-    }
+    },
+    {
+            "type": "ColumnLayout",
+            "items": [
+                            {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+            {
+      "type": "Label",
+      "caption": "4. Variablen einblenden / ausblenden",
+      "bold": true
+    },
+    {
+      "type": "CheckBox",
+      "name": "Actual_Heating_Phase",
+      "caption": "Variable: Heizphase"
+    },
+    {
+      "type": "CheckBox",
+      "name": "Windowdoor_Status",
+      "caption": "Variable: Kontakt"
+    },
+    {
+      "type": "CheckBox",
+      "name": "Show_Override_Button",
+      "caption": "Variable: Übersteuern"
+    },
+            {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+                {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+                {
+      "type": "Label",
+      "caption": "5. Optionen",
+      "bold": true
+    },
+    {
+      "type": "CheckBox",
+      "name": "Auto_Disable_Override_Last_Lowering",
+      "caption": "Übersteuern: Im letzten Absenkzeitraum deaktivieren"
+    },
+                            {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+                                    {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        }
+
+]
+}
   ],
   "actions": [
     {
