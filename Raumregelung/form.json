@@ -1,29 +1,44 @@
 {
   "elements": [
-        {
+    {
       "type": "Label",
       "caption": "1. Heizungsregelung",
       "bold": true
     },
+    {
+      "type": "RowLayout",
+      "items": [
         {
-          "type": "RowLayout",
-          "items": [
-            {
-              "type": "Select",
-              "name": "HeatingControlType",
-              "caption": "Regelungstyp",
-              "width": "600px",
-              "options": [
-                { "caption": "Automtische Regelung", "value": 0 },
-                { "caption": "2-Punkt-Regelung", "value": 1 }
-              ]
-            },
-            {
-              "type": "Label",
-              "caption": "",
-              "width": "80px"
-            },
-          {
+          "type": "Select",
+          "name": "HeatingControlType",
+          "caption": "Regelungstyp",
+          "width": "600px",
+          "options": [
+            { "caption": "Automtische Regelung", "value": 0 },
+            { "caption": "2-Punkt-Regelung", "value": 1 }
+          ]
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "FrostProtection",
+          "value": "",
+          "caption": "Frostschutztemperatur",
+          "suffix": "°C",
+          "minimum": "5",
+          "digits": 1,
+          "width": "300px"
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+        {
           "type": "NumberSpinner",
           "name": "SwitchHysteresis",
           "value": "",
@@ -32,9 +47,9 @@
           "minimum": "0",
           "digits": 1,
           "width": "300px"
-          } 
-          ]
-        },
+        }
+      ]
+    },
     {
       "type": "RowLayout",
       "items": [
@@ -43,17 +58,17 @@
           "name": "Invert_SwitchAktor",
           "caption": "Schaltaktor: Logik invertieren",
           "width": "600px"
-        }  
+        }
       ]
     },
-            {
-          "type": "Label",
-          "caption": ""
-        },
-                    {
-          "type": "Label",
-          "caption": ""
-        },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
     {
       "type": "Label",
       "caption": "2. Variablenauswahl + Wochenplan",
@@ -86,27 +101,26 @@
     {
       "type": "RowLayout",
       "items": [
-                {
+        {
           "type": "SelectVariable",
           "name": "ID_Aktor",
           "caption": "Soll-Temperatur: Sollwert-ID - Auswahl der Soll-Temperatur Variable (Float)",
           "validVariableTypes": [2],
           "width": "600px"
         },
-                {
+        {
           "type": "SelectVariable",
           "name": "ID_SwitchAktor",
           "caption": "Schaltaktor: Aktor-ID - Auswahl der Schaltaktor Variable (Boolean)",
           "validVariableTypes": [0],
           "width": "600px"
         },
-                {
+        {
           "type": "Label",
           "caption": "",
           "width": "80px"
         },
-
-                {
+        {
           "type": "Select",
           "name": "Weekly_Schedule_Selection",
           "caption": "Wochenplanerstellung",
@@ -121,15 +135,15 @@
       ]
     },
     {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
-        {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
+      "type": "Label",
+      "caption": "",
+      "width": "80px"
+    },
+    {
+      "type": "Label",
+      "caption": "",
+      "width": "80px"
+    },
     {
       "type": "Label",
       "caption": "3. Öffnungskontakte (Fenster & Türen)",
@@ -185,77 +199,150 @@
               "suffix": "Sekunden",
               "minimum": "0",
               "width": "300px"
+            },
+            {
+              "type": "Label",
+              "caption": ""
+            },
+            {
+              "type": "Label",
+              "caption": ""
+            },
+            {
+              "type": "Label",
+              "caption": ""
             }
           ]
         }
       ]
     },
     {
-            "type": "ColumnLayout",
-            "items": [
-                            {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
+      "type": "Label",
+      "caption": "4. Variablen einblenden / ausblenden",
+      "bold": true
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "Actual_Heating_Phase",
+          "caption": "Variable: Heizphase"
         },
         {
           "type": "Label",
           "caption": "",
           "width": "80px"
         },
-            {
-      "type": "Label",
-      "caption": "4. Variablen einblenden / ausblenden",
-      "bold": true
-    },
-    {
-      "type": "CheckBox",
-      "name": "Actual_Heating_Phase",
-      "caption": "Variable: Heizphase"
-    },
-    {
-      "type": "CheckBox",
-      "name": "Windowdoor_Status",
-      "caption": "Variable: Kontakt"
-    },
-    {
-      "type": "CheckBox",
-      "name": "Show_Override_Button",
-      "caption": "Variable: Übersteuern"
-    },
-            {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
-                {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
-                {
-      "type": "Label",
-      "caption": "5. Optionen",
-      "bold": true
-    },
-    {
-      "type": "CheckBox",
-      "name": "Auto_Disable_Override_Last_Lowering",
-      "caption": "Übersteuern: Im letzten Absenkzeitraum deaktivieren"
-    },
-                            {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
-        },
-                                    {
-          "type": "Label",
-          "caption": "",
-          "width": "80px"
+        {
+          "type": "CheckBox",
+          "name": "Windowdoor_Status",
+          "caption": "Variable: Kontakte"
         }
-
-]
-}
+      ]
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "Label",
+      "caption": "Lizenz: Erweiterte Pro-Funktionen",
+      "bold": true
+    },
+    {
+      "type": "ValidationTextBox",
+      "name": "LicenseKey",
+      "caption": "Lizenzschlüssel",
+      "width": "1100px",
+      "multiline": true,
+      "rows": 3
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "Label",
+      "caption": "1. Übersteuerung: Heizen erzwingen",
+      "bold": true
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "Show_Override_Button",
+          "caption": "Funktion: Übersteuerung aktivieren"
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+        {
+          "type": "CheckBox",
+          "name": "Auto_Disable_Override_Last_Lowering",
+          "caption": "Option: Übersteuerung vor der letzten Absenkung automatisch deaktivieren"
+        }
+      ]
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "ColumnLayout",
+          "items": [
+            {
+              "type": "Label",
+              "caption": "2. Heizstopp: Heizbetrieb extern sperren (Vorrang vor Heizstart)",
+              "bold": true
+            },
+            {
+              "type": "SelectVariable",
+              "name": "HeatingBlock_VarID",
+              "caption": "Heizstopp: Auswahl der Variablen (Boolean)",
+              "validVariableTypes": [0],
+              "width": "350px"
+            }
+          ]
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "80px"
+        },
+        {
+          "type": "ColumnLayout",
+          "items": [
+            {
+              "type": "Label",
+              "caption": "3. Heizstart: Heizen extern erzwingen (Heizstopp hat Vorrang)",
+              "bold": true
+            },
+            {
+              "type": "SelectVariable",
+              "name": "ForceHeating_VarID",
+              "caption": "Heizstart: Auswahl der Variablen (Boolean)",
+              "validVariableTypes": [0],
+              "width": "350px"
+            }
+          ]
+        }
+      ]
+    }
   ],
   "actions": [
     {
@@ -278,19 +365,19 @@
         {
           "type": "ColumnLayout",
           "items": [
-                {
-                "type": "Button",
-                "caption": "Modulinfo",
-                "onClick": "echo 'https://stegmann-smarthome.de/modul-einzelraumtemperaturregelung';",
-                "width": "200px"
-                },
-                {
-                "type": "Button",
-                "caption": "Kontaktformular",
-                "onClick": "echo 'https://stegmann-smarthome.de/#kontakt';",
-                "width": "200px"
-                }
-            ]
+            {
+              "type": "Button",
+              "caption": "Modulinfo",
+              "onClick": "echo 'https://stegmann-smarthome.de/modul-einzelraumtemperaturregelung';",
+              "width": "200px"
+            },
+            {
+              "type": "Button",
+              "caption": "Kontaktformular",
+              "onClick": "echo 'https://stegmann-smarthome.de/#kontakt';",
+              "width": "200px"
+            }
+          ]
         },
         {
           "type": "Label",
@@ -300,22 +387,22 @@
         {
           "type": "ColumnLayout",
           "items": [
-                {
-                "type": "Button",
-                "caption": "www.stegmann-smarthome.de",
-                "onClick": "echo 'https://www.stegmann-smarthome.de';",
-                "width": "300px"
-                },
-                {
-                "type": "Button",
-                "caption": "info@stegmann-smarthome.de",
-                "onClick": "echo 'mailto:info@stegmann-smarthome.de';",
-                "width": "300px"
-                }
-            ]
+            {
+              "type": "Button",
+              "caption": "www.stegmann-smarthome.de",
+              "onClick": "echo 'https://www.stegmann-smarthome.de';",
+              "width": "300px"
+            },
+            {
+              "type": "Button",
+              "caption": "info@stegmann-smarthome.de",
+              "onClick": "echo 'mailto:info@stegmann-smarthome.de';",
+              "width": "300px"
+            }
+          ]
         }
-    ]
-  }
-],
+      ]
+    }
+  ],
   "status": []
 }

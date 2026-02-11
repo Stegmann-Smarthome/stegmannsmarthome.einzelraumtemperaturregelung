@@ -9,7 +9,8 @@
             "Year":"Jahr",
             "Total":"Gesamt",
             "opening contact":"Kontakt",
-            "Override":"Übersteuern"
+            "Override":"Übersteuern",
+            "Heating block":"Heizstopp"
         }
     }
 }
