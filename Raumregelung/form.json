@@ -141,6 +141,22 @@
     },
     {
       "type": "Label",
+      "caption": "Hinweis:",
+      "bold": true,
+      "width": "1400px"
+    },
+    {
+      "type": "Label",
+      "caption": "Die Variablendarstellung der 'Ist-Temperatur' benötigt eine Temperaturprofil.",
+      "width": "1400px"
+    },
+    {
+      "type": "Button",
+      "caption": "Temperaturprofil setzen",
+      "onClick": "RR_ApplyTemperatureProfile($id);"
+    },
+    {
+      "type": "Label",
       "caption": "",
       "width": "80px"
     },
@@ -262,7 +278,7 @@
       "type": "ValidationTextBox",
       "name": "LicenseKey",
       "caption": "Lizenzschlüssel",
-      "width": "1100px",
+      "width": "1600px",
       "multiline": true,
       "rows": 3
     },
@@ -307,15 +323,15 @@
           "items": [
             {
               "type": "Label",
-              "caption": "2. Heizstopp: Heizbetrieb extern sperren (Vorrang vor Heizstart)",
+              "caption": "2. Heizstopp: Heizung über externe Variable sperren (hat höchste Priorität)",
               "bold": true
             },
             {
               "type": "SelectVariable",
               "name": "HeatingBlock_VarID",
-              "caption": "Heizstopp: Auswahl der Variablen (Boolean)",
+              "caption": "Boolean-Variable: bei TRUE wird die Heizung gesperrt",
               "validVariableTypes": [0],
-              "width": "350px"
+              "width": "380px"
             }
           ]
         },
@@ -329,17 +345,31 @@
           "items": [
             {
               "type": "Label",
-              "caption": "3. Heizstart: Heizen extern erzwingen (Heizstopp hat Vorrang)",
+              "caption": "3. Heizstart: Heizung über externe Variable erzwingen (wird durch Heizstopp übersteuert)",
               "bold": true
             },
             {
               "type": "SelectVariable",
               "name": "ForceHeating_VarID",
-              "caption": "Heizstart: Auswahl der Variablen (Boolean)",
+              "caption": "Boolean-Variable: bei TRUE wird dauerhaft geheizt",
               "validVariableTypes": [0],
-              "width": "350px"
+              "width": "380px"
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "Label",
+      "caption": ""
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "HeatingBlock_Status",
+          "caption": "Variable: Extern (Heizstopp / Heizstart) einblenden"
         }
       ]
     }

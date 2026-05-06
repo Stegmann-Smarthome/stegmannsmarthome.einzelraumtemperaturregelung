@@ -248,6 +248,16 @@ class Aktor extends IPSModule
             IPS_SetDisabled($id, $disable);
         }
 
+        // Override-Variable initial deaktivieren wenn Heizung aus oder Urlaub an
+        $overrideVarID = @$this->GetIDForIdent("manual_override");
+        if ($overrideVarID !== false && IPS_VariableExists($overrideVarID)) {
+            IPS_SetDisabled($overrideVarID, $disable);
+            if ($disable && (bool)GetValue($overrideVarID)) {
+                $this->SetValue("manual_override", false);
+                $this->WriteAttributeString("OverrideDate", "");
+            }
+        }
+
         // === Aktor analog zu den Slidern initial sperren/freigeben ===
         $controlType = (int)$this->ReadPropertyInteger('HeatingControlType');
         if ($controlType === 0) {
@@ -283,7 +293,6 @@ class Aktor extends IPSModule
         }
         if ($linkID !== false && IPS_VariableExists($targetID) && $targetID > 0) {
             IPS_SetLinkTargetID($linkID, $targetID);
-            IPS_SetVariableCustomProfile($targetID, "~Temperature");
         }
 
         // Ist-Temperatur-Variable auf VM_UPDATE überwachen
@@ -387,7 +396,7 @@ class Aktor extends IPSModule
                     5
                 );
                 IPS_SetIcon($id, "calendar-range");
-                IPS_LogMessage("Raumregelung", "Variable actual_heating_phase angelegt.");
+                $this->LogMessage("Raumregelung: Variable actual_heating_phase angelegt.", KL_MESSAGE);
             }
 
             // sofort korrekten Status setzen (auch bei späterem Einschalten)
@@ -431,7 +440,7 @@ class Aktor extends IPSModule
                     6
                 );
                 IPS_SetIcon($id, "sensor");
-                IPS_LogMessage("Raumregelung", "Variable windowdoor_status angelegt.");
+                $this->LogMessage("Raumregelung: Variable windowdoor_status angelegt.", KL_MESSAGE);
             }
         } else {
             $id = @$this->GetIDForIdent("windowdoor_status");
@@ -440,38 +449,84 @@ class Aktor extends IPSModule
             }
         }
 
-        // 4.3 Anzeige der externen Heizsperre, falls aktiviert
+        // 4.3 Anzeige der externen Heizsteuerung (Heizstopp / Heizstart), falls aktiviert
         if ($this->ReadPropertyBoolean("HeatingBlock_Status")) {
             if (@$this->GetIDForIdent("heatingblock_status") === false) {
-                $id = $this->RegisterVariableBoolean(
+                $id = $this->RegisterVariableInteger(
                     "heatingblock_status",
-                    $this->Translate("Heating block"),
+                    $this->Translate("External heating control"),
                     [
-                        'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-                        'ICON'         => 'lock',
-                        'OPTIONS'      => json_encode([
+                        'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
+                        'ICON'               => 'lock',
+                        'COLOR'              => -1,
+                        'PREFIX'             => '',
+                        'SUFFIX'             => '',
+                        'USAGE_TYPE'         => 0,
+                        'PERCENTAGE'         => false,
+                        'MIN'                => 0,
+                        'MAX'                => 2,
+                        'THOUSANDS_SEPARATOR' => '',
+                        'DIGITS'             => 0,
+                        'DECIMAL_SEPARATOR'  => '',
+                        'INTERVALS_ACTIVE'   => true,
+                        'INTERVALS'          => json_encode([
                             [
-                                'Value'        => false,
-                                'Caption'      => 'OK',
-                                'IconActive'   => true,
-                                'IconValue'    => 'lock-open',
-                                'ColorActive'  => true,
-                                'ColorValue'   => 0x00AA00
+                                'IntervalMinValue' => 0,
+                                'IntervalMaxValue' => 0,
+                                'ConstantActive'   => true,
+                                'ConstantValue'    => 'OK',
+                                'ConversionFactor' => 1,
+                                'PrefixActive'     => false,
+                                'PrefixValue'      => '',
+                                'SuffixActive'     => false,
+                                'SuffixValue'      => '',
+                                'DigitsActive'     => false,
+                                'DigitsValue'      => 0,
+                                'IconActive'       => true,
+                                'IconValue'        => 'lock',
+                                'ColorActive'      => true,
+                                'ColorValue'       => 0x00AA00
                             ],
                             [
-                                'Value'        => true,
-                                'Caption'      => 'Stopp',
-                                'IconActive'   => true,
-                                'IconValue'    => 'lock',
-                                'ColorActive'  => true,
-                                'ColorValue'   => 0xFF0000
-                            ]
-                        ]),
+                                'IntervalMinValue' => 1,
+                                'IntervalMaxValue' => 1,
+                                'ConstantActive'   => true,
+                                'ConstantValue'    => 'Heizstopp',
+                                'ConversionFactor' => 1,
+                                'PrefixActive'     => false,
+                                'PrefixValue'      => '',
+                                'SuffixActive'     => false,
+                                'SuffixValue'      => '',
+                                'DigitsActive'     => false,
+                                'DigitsValue'      => 0,
+                                'IconActive'       => true,
+                                'IconValue'        => 'lock',
+                                'ColorActive'      => true,
+                                'ColorValue'       => 0xFF0000
+                            ],
+                            [
+                                'IntervalMinValue' => 2,
+                                'IntervalMaxValue' => 2,
+                                'ConstantActive'   => true,
+                                'ConstantValue'    => 'Heizstart',
+                                'ConversionFactor' => 1,
+                                'PrefixActive'     => false,
+                                'PrefixValue'      => '',
+                                'SuffixActive'     => false,
+                                'SuffixValue'      => '',
+                                'DigitsActive'     => false,
+                                'DigitsValue'      => 0,
+                                'IconActive'       => true,
+                                'IconValue'        => 'lock',
+                                'ColorActive'      => true,
+                                'ColorValue'       => 0xFF0000
+                            ],
+                        ])
                     ],
                     8
                 );
                 IPS_SetIcon($id, "lock");
-                IPS_LogMessage("Raumregelung", "Variable heatingblock_status angelegt.");
+                $this->LogMessage("Raumregelung: Variable heatingblock_status angelegt (Integer, 3 Zustände).", KL_MESSAGE);
             }
 
             $this->updateHeatingBlockStatusVar();
@@ -517,9 +572,31 @@ class Aktor extends IPSModule
             $wdVarID = @$this->GetIDForIdent("windowdoor_status");
             if ($wdVarID !== false) {
                 $this->SetValue("windowdoor_status", $anyOpen);
-                IPS_LogMessage("Raumregelung", "Initialer Fensterstatus: " . ($anyOpen ? "offen" : "geschlossen"));
+                $this->LogMessage("Raumregelung: Initialer Fensterstatus: " . ($anyOpen ? "offen" : "geschlossen"), KL_MESSAGE);
             }
         }
+    }
+
+    public function ApplyTemperatureProfile()
+    {
+        $targetID = $this->ReadPropertyInteger("Is_Temperature");
+        if (!($targetID > 0 && IPS_VariableExists($targetID))) {
+            echo $this->Translate("No valid temperature variable selected.");
+            return;
+        }
+
+        $presentation = @IPS_GetVariablePresentation($targetID);
+        if (is_array($presentation) && isset($presentation['SUFFIX']) && str_contains($presentation['SUFFIX'], '°C')) {
+            echo $this->Translate("The variable already has a temperature presentation. No changes were made.");
+            return;
+        }
+
+        IPS_SetVariableCustomPresentation($targetID, [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'TEMPLATE'     => VARIABLE_TEMPLATE_VALUE_PRESENTATION_ROOM_TEMPERATURE
+        ]);
+        $this->LogMessage("Raumregelung: Darstellung (Wertanzeige: Raumtemperatur) auf Variable #$targetID gesetzt.", KL_MESSAGE);
+        echo $this->Translate("Presentation (Value display: Room temperature) successfully applied.");
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -567,16 +644,16 @@ class Aktor extends IPSModule
                         // Backups nur sichern, wenn sie sich vom Zielwert unterscheiden
                         if ($currentHeat !== (float)$frostschutz) {
                             $this->WriteAttributeFloat("BackupActorSollTemp", $currentHeat);
-                            IPS_LogMessage("Raumregelung", "Backup HEAT (Heizung aus): {$currentHeat}");
+                            $this->LogMessage("Raumregelung: Backup HEAT (Heizung aus): {$currentHeat}", KL_MESSAGE);
                         } else {
-                            IPS_LogMessage("Raumregelung", "Kein HEAT-Backup (bereits Frostschutz {$currentHeat})");
+                            $this->LogMessage("Raumregelung: Kein HEAT-Backup (bereits Frostschutz {$currentHeat})", KL_MESSAGE);
                         }
 
                         if ($currentLow !== (float)$frostschutz) {
                             $this->WriteAttributeFloat("BackupLoweringTemp", $currentLow);
-                            IPS_LogMessage("Raumregelung", "Backup LOW (Heizung aus): {$currentLow}");
+                            $this->LogMessage("Raumregelung: Backup LOW (Heizung aus): {$currentLow}", KL_MESSAGE);
                         } else {
-                            IPS_LogMessage("Raumregelung", "Kein LOW-Backup (bereits Frostschutz {$currentLow})");
+                            $this->LogMessage("Raumregelung: Kein LOW-Backup (bereits Frostschutz {$currentLow})", KL_MESSAGE);
                         }
 
                         // Aktor und Slider setzen (beide Slider exakt auf FrostProtection)
@@ -601,7 +678,7 @@ class Aktor extends IPSModule
                             if ($heatVarID && IPS_VariableExists($heatVarID)) {
                                 $target = (float)GetValue($heatVarID);
                                 $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$target);
-                                IPS_LogMessage("Raumregelung", "Heizung an bei aktivem Override: Aktor auf {$target}°C gesetzt.");
+                                $this->LogMessage("Raumregelung: Heizung an bei aktivem Override: Aktor auf {$target}°C gesetzt.", KL_MESSAGE);
                                 IPS_SetDisabled($actorID, false);
                                 return; // Restliche Restore-Logik überspringen
                             }
@@ -624,7 +701,7 @@ class Aktor extends IPSModule
                                     $restoreLow = $backupHeat;
                                 }
                                 $this->SetValue("set_lowering_temperature", $restoreLow);
-                                IPS_LogMessage("Raumregelung", "LOW-Backup wiederhergestellt: {$restoreLow}");
+                                $this->LogMessage("Raumregelung: LOW-Backup wiederhergestellt: {$restoreLow}", KL_MESSAGE);
                             }
 
                             // ECHO-Schutz aktivieren und den Aktor passend zur Phase setzen
@@ -636,7 +713,7 @@ class Aktor extends IPSModule
                             }
                             $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$targetForActor);
 
-                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).");
+                            $this->LogMessage("Raumregelung: Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).", KL_MESSAGE);
                             IPS_SetDisabled($actorID, false);
                         }
                     }
@@ -656,16 +733,16 @@ class Aktor extends IPSModule
 
                         if ($currentHeat !== (float)$frostschutz) {
                             $this->WriteAttributeFloat("BackupActorSollTemp", $currentHeat);
-                            IPS_LogMessage("Raumregelung", "Backup HEAT (Urlaub an): {$currentHeat}");
+                            $this->LogMessage("Raumregelung: Backup HEAT (Urlaub an): {$currentHeat}", KL_MESSAGE);
                         } else {
-                            IPS_LogMessage("Raumregelung", "Kein HEAT-Backup (bereits Frostschutz {$currentHeat})");
+                            $this->LogMessage("Raumregelung: Kein HEAT-Backup (bereits Frostschutz {$currentHeat})", KL_MESSAGE);
                         }
 
                         if ($currentLow !== (float)$frostschutz) {
                             $this->WriteAttributeFloat("BackupLoweringTemp", $currentLow);
-                            IPS_LogMessage("Raumregelung", "Backup LOW (Urlaub an): {$currentLow}");
+                            $this->LogMessage("Raumregelung: Backup LOW (Urlaub an): {$currentLow}", KL_MESSAGE);
                         } else {
-                            IPS_LogMessage("Raumregelung", "Kein LOW-Backup (bereits Frostschutz {$currentLow})");
+                            $this->LogMessage("Raumregelung: Kein LOW-Backup (bereits Frostschutz {$currentLow})", KL_MESSAGE);
                         }
 
                         $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$frostschutz);
@@ -701,7 +778,7 @@ class Aktor extends IPSModule
                                     $restoreLow = $backupHeat;
                                 }
                                 $this->SetValue("set_lowering_temperature", $restoreLow);
-                                IPS_LogMessage("Raumregelung", "LOW-Backup wiederhergestellt: {$restoreLow}");
+                                $this->LogMessage("Raumregelung: LOW-Backup wiederhergestellt: {$restoreLow}", KL_MESSAGE);
                             }
 
                             // ECHO-Schutz aktivieren und den Aktor passend zur Phase setzen
@@ -712,7 +789,7 @@ class Aktor extends IPSModule
                             }
                             $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$targetForActor);
 
-                            IPS_LogMessage("Raumregelung", "Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).");
+                            $this->LogMessage("Raumregelung: Aktor {$actorID} auf Restore-Ziel {$targetForActor} gesetzt (Phase {$action}).", KL_MESSAGE);
                             IPS_SetDisabled($actorID, false);
                         }
                     }
@@ -729,6 +806,17 @@ class Aktor extends IPSModule
                 IPS_SetDisabled($id, $disable);
             }
 
+            // Override-Variable deaktivieren/aktivieren und ggf. zurücksetzen
+            $overrideVarID = @$this->GetIDForIdent("manual_override");
+            if ($overrideVarID !== false && IPS_VariableExists($overrideVarID)) {
+                IPS_SetDisabled($overrideVarID, $disable);
+                if ($disable && (bool)GetValue($overrideVarID)) {
+                    $this->SetValue("manual_override", false);
+                    $this->WriteAttributeString("OverrideDate", "");
+                    $this->LogMessage("Raumregelung: Override automatisch deaktiviert (Heizung aus oder Urlaub an).", KL_MESSAGE);
+                }
+            }
+
             // === NEU: Aktor synchron zu den Slidern sperren/freigeben ===
             if ($actorID > 0 && IPS_VariableExists($actorID)) {
                 IPS_SetDisabled($actorID, $disable);
@@ -738,10 +826,10 @@ class Aktor extends IPSModule
             if ($planID > 0 && IPS_EventExists($planID)) {
                 if ($vacationActive || !$heatingActive) {
                     IPS_SetEventActive($planID, false);
-                    IPS_LogMessage("Raumregelung", "Wochenplan (ID {$planID}) deaktiviert.");
+                    $this->LogMessage("Raumregelung: Wochenplan (ID {$planID}) deaktiviert.", KL_MESSAGE);
                 } else {
                     IPS_SetEventActive($planID, true);
-                    IPS_LogMessage("Raumregelung", "Wochenplan (ID {$planID}) aktiviert.");
+                    $this->LogMessage("Raumregelung: Wochenplan (ID {$planID}) aktiviert.", KL_MESSAGE);
                     $this->executeCurrentPlanAction($planID); // aktuelle Planaktion ausführen
                 }
             }
@@ -788,11 +876,8 @@ class Aktor extends IPSModule
                     $this->SetValue("set_heating_temperature", $frostschutz);
                 }
 
-                IPS_LogMessage(
-                    "Raumregelung",
-                    "Externe Aktor-Änderung verworfen (Heizung AUS/Urlaub AN). Zurückgesetzt auf Frostschutz {$frostschutz}°C."
-                );
-                return; // nichts weiter spiegeln
+                $this->LogMessage("Raumregelung: Externe Aktor-Änderung verworfen (Heizung AUS/Urlaub AN). Zurückgesetzt auf Frostschutz {$frostschutz}°C.", KL_MESSAGE);
+                return; // nichts weiter spiegeln 
             }
 
             $actorValue = (float)GetValue($actorID);
@@ -860,24 +945,24 @@ class Aktor extends IPSModule
         }
 
         if ($anyWindowOpen) {
-            IPS_LogMessage("Raumregelung", "Mindestens ein Fenster ist geöffnet.");
+            $this->LogMessage("Raumregelung: Mindestens ein Fenster ist geöffnet.", KL_MESSAGE);
             // Absenk-Timer nur, wenn Heizung AN & Urlaub AUS
             if ($heatingActive && !$vacationActive) {
                 $delayMs = intval($this->ReadPropertyFloat('windowdoor_reporting_delay') * 1000);
                 $this->SetTimerInterval("WindowOpenTimer", $delayMs);
-                IPS_LogMessage("Raumregelung", "Fenster geöffnet: Timer gestartet.");
+                $this->LogMessage("Raumregelung: Fenster geöffnet: Timer gestartet.", KL_MESSAGE);
             } else {
                 // Sicherheitshalber keinen Timer laufen lassen
                 $this->SetTimerInterval("WindowOpenTimer", 0);
             }
         } else {
-            IPS_LogMessage("Raumregelung", "Alle Fenster geschlossen.");
+            $this->LogMessage("Raumregelung: Alle Fenster geschlossen.", KL_MESSAGE);
             // Plan-Ziel & Aktor nur bei Heizung AN & Urlaub AUS wiederherstellen
             if ($controlType === 0 && $heatingActive && !$vacationActive) {
                 $target  = $this->getTargetSetpointForCurrentPhase();
                 if ($actorID > 0 && IPS_VariableExists($actorID)) {
                     $this->writeAnalogActorTargetConsideringHeatingBlock((int)$actorID, (float)$target);
-                    IPS_LogMessage('Raumregelung', "Plan-Ziel {$target}°C wiederhergestellt.");
+                    $this->LogMessage("Raumregelung: Plan-Ziel {$target}°C wiederhergestellt.", KL_MESSAGE);
                 }
             }
             // Timer immer stoppen
@@ -1165,6 +1250,8 @@ PEM;
     {
         $controlType = (int)$this->ReadPropertyInteger('HeatingControlType');
 
+        $this->updateHeatingBlockStatusVar();
+
         // 2-Punkt: Zustandsmaschine über updateTwoPointSwitch (Phase=Heizen wird in getCurrentPlanActionId berücksichtigt)
         if ($controlType === 1) {
             $this->updateTwoPointSwitch();
@@ -1215,21 +1302,25 @@ PEM;
         // 2-Punkt: Zustandsmaschine über updateTwoPointSwitch
         if ($controlType === 1) {
             $this->updateTwoPointSwitch();
+            $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
             return;
         }
 
         // Analog: Frostschutz setzen, wenn block aktiv; sonst aktuellen Zielwert wieder anfahren
         if ($controlType !== 0) {
+            $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
             return;
         }
 
         $actorID = (int)$this->ReadPropertyInteger("ID_Aktor");
         if (!($actorID > 0 && IPS_VariableExists($actorID))) {
+            $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
             return;
         }
 
         if ($this->isHeatingBlocked()) {
             $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$this->ReadPropertyFloat("FrostProtection"));
+            $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
             return;
         }
 
@@ -1245,6 +1336,7 @@ PEM;
             $target = (float)$this->getTargetSetpointForCurrentPhase();
         }
         $this->writeAnalogActorTargetConsideringHeatingBlock($actorID, (float)$target);
+        $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
     }
 
     private function updateHeatingBlockStatusVar(): void
@@ -1253,7 +1345,15 @@ PEM;
         if ($id === false || !IPS_VariableExists($id)) {
             return;
         }
-        $this->SetValue("heatingblock_status", $this->isHeatingBlocked());
+        if ($this->isHeatingBlocked()) {
+            $state = 1; // Heizstopp
+        } elseif ($this->isForceHeatingActive()) {
+            $state = 2; // Heizstart
+        } else {
+            $state = 0; // Inaktiv
+        }
+
+        $this->SetValue("heatingblock_status", $state);
     }
 
     private function writeAnalogActorTargetConsideringHeatingBlock(int $actorID, float $target): void
@@ -1317,7 +1417,7 @@ PEM;
             if ($script !== "") {
                 // Aktionsskript ausführen (stellt den Aktor)
                 IPS_RunScriptText($script);
-                IPS_LogMessage("Raumregelung", "ExecutePlanAction: Aktion {$actionID} ausgeführt.");
+                $this->LogMessage("Raumregelung: ExecutePlanAction: Aktion {$actionID} ausgeführt.", KL_MESSAGE);
 
                 // Phase SOFORT anzeigen + manuell gesetzte Phase merken
                 $this->WriteAttributeInteger("LastPlanAction", (int)$actionID);
@@ -1327,7 +1427,7 @@ PEM;
                     $this->SetValue("actual_heating_phase", (int)$actionID); // 0=Heizen, 1=Absenken
                 }
             } else {
-                IPS_LogMessage("Raumregelung", "ExecutePlanAction: Kein Script für Aktion {$actionID}.");
+                $this->LogMessage("Raumregelung: ExecutePlanAction: Kein Script für Aktion {$actionID}.", KL_MESSAGE);
             }
         }
     }
@@ -1344,7 +1444,7 @@ PEM;
         if ($existingPlanID > 0 && IPS_EventExists($existingPlanID)) {
             IPS_DeleteEvent($existingPlanID);
             $this->WriteAttributeInteger("HeatingPlanID", 0);
-            IPS_LogMessage("Raumregelung", "Alter Wochenplan (ID {$existingPlanID}) gelöscht.");
+            $this->LogMessage("Raumregelung: Alter Wochenplan (ID {$existingPlanID}) gelöscht.", KL_MESSAGE);
             $this->updateLoweringVisibility(); // nach Löschung sofort ausblenden
         }
 
@@ -1427,7 +1527,7 @@ PEM;
         $this->RegisterMessage($heatingPlan, EM_CHANGESCHEDULEGROUPPOINT);
         $this->RegisterMessage($heatingPlan, EM_CHANGESCHEDULEACTION);
 
-        IPS_LogMessage("Raumregelung", "Neuer Wochenplan angelegt (ID {$heatingPlan}).");
+        $this->LogMessage("Raumregelung: Neuer Wochenplan angelegt (ID {$heatingPlan}).", KL_MESSAGE);
     }
 
     public function RequestAction($Ident, $Value)
@@ -1493,7 +1593,7 @@ PEM;
                 // Phasenlogik: nur senden, wenn nicht Action 1 aktiv ist
                 $action = $this->getCurrentPlanActionId(); // -1, 0, 1
                 if ($action === 1) {
-                    IPS_LogMessage("Raumregelung", "Heating-Änderung geblockt (Action 1 aktiv).");
+                    $this->LogMessage("Raumregelung: Heating-Änderung geblockt (Action 1 aktiv).", KL_MESSAGE);
                     break;
                 }
 
@@ -1531,7 +1631,7 @@ PEM;
                 // 4) Nur in Absenkphase senden
                 $action = $this->getCurrentPlanActionId(); // -1, 0, 1
                 if ($action === 0) {
-                    IPS_LogMessage("Raumregelung", "Lowering-Änderung geblockt (Action 0 aktiv).");
+                    $this->LogMessage("Raumregelung: Lowering-Änderung geblockt (Action 0 aktiv).", KL_MESSAGE);
                     break;
                 }
 
@@ -1543,7 +1643,7 @@ PEM;
                 }
 
                 // action === -1 (konservativ: nicht senden)
-                IPS_LogMessage("Raumregelung", "Lowering geändert, aber keine passende Action aktiv – kein Senden.");
+                $this->LogMessage("Raumregelung: Lowering geändert, aber keine passende Action aktiv – kein Senden.", KL_MESSAGE);
                 break;
 
             case "WindowOpenTimer":
@@ -1560,6 +1660,15 @@ PEM;
                 // Ein-/Ausschalten der Übersteuerung
                 $enable = (bool)$Value;
                 if ($enable) {
+                    // Override nur aktivierbar, wenn Heizung aktiv ist
+                    $heatingVarID = $this->ReadAttributeInteger("HeatingStatusVarID");
+                    $heatingActive = ($heatingVarID > 0) ? (bool)GetValue($heatingVarID) : true;
+                    if (!$heatingActive) {
+                        $this->SetValue("manual_override", false);
+                        $this->LogMessage("Raumregelung: Override-Aktivierung blockiert (Heizung aus).", KL_MESSAGE);
+                        break;
+                    }
+
                     // Wenn Option aktiv ist: Aktivierung in der letzten Absenkphase unterbinden
                     $autoDisable = $this->ReadPropertyBoolean("Auto_Disable_Override_Last_Lowering");
                     if ($autoDisable) {
@@ -1569,7 +1678,7 @@ PEM;
                             if ($actionID === 1 && $this->isInLastLoweringOfToday($planID)) {
                                 // Aktivierung verhindern und Schalter zurücksetzen
                                 $this->SetValue("manual_override", false);
-                                IPS_LogMessage("Raumregelung", "Override-Aktivierung in der letzten Absenkphase unterbunden (Option aktiv).");
+                                $this->LogMessage("Raumregelung: Override-Aktivierung in der letzten Absenkphase unterbunden (Option aktiv).", KL_MESSAGE);
                                 break;
                             }
                         }
@@ -1622,7 +1731,7 @@ PEM;
                 if ($controlType === 1) {
                     $this->updateTwoPointSwitch();
                 }
-                IPS_LogMessage("Raumregelung", "Override automatisch deaktiviert (Tageswechsel).");
+                $this->LogMessage("Raumregelung: Override automatisch deaktiviert (Tageswechsel).", KL_MESSAGE);
             }
         }
     }
@@ -1644,7 +1753,7 @@ PEM;
         if ($actorID > 0 && IPS_VariableExists($actorID) && $heatVarID && IPS_VariableExists($heatVarID)) {
             $target = (float)GetValue($heatVarID);
             $this->writeAnalogActorTargetConsideringHeatingBlock((int)$actorID, (float)$target);
-            IPS_LogMessage("Raumregelung", "Override aktiv: Aktor auf {$target}°C gesetzt.");
+            $this->LogMessage("Raumregelung: Override aktiv: Aktor auf {$target}°C gesetzt.", KL_MESSAGE);
         }
 
         // Anzeige Phase aktualisieren
@@ -1673,7 +1782,7 @@ PEM;
                 if ($actorID > 0 && IPS_VariableExists($actorID) && $lowVarID && IPS_VariableExists($lowVarID)) {
                     $target = (float)GetValue($lowVarID);
                     $this->writeAnalogActorTargetConsideringHeatingBlock((int)$actorID, (float)$target);
-                    IPS_LogMessage("Raumregelung", "Override AUS: Aktor auf Absenktemperatur {$target}°C gesetzt.");
+                    $this->LogMessage("Raumregelung: Override AUS: Aktor auf Absenktemperatur {$target}°C gesetzt.", KL_MESSAGE);
                 }
             }
         }
@@ -1684,7 +1793,7 @@ PEM;
             $this->executeCurrentPlanAction($planID);
         }
         $this->updateHeatingPhaseState($this->ReadAttributeInteger("HeatingPlanID"));
-        IPS_LogMessage("Raumregelung", "Override deaktiviert.");
+        $this->LogMessage("Raumregelung: Override deaktiviert.", KL_MESSAGE);
     }
 
     /**
@@ -1697,12 +1806,22 @@ PEM;
         // Auto-Reset prüfen
         $this->ensureOverrideValidity();
 
-        // Bei aktiver Übersteuerung Phase = Heizen (0)
+        // Bei aktiver Übersteuerung / externem Erzwingen: Phase = Heizen (0)
         if ($this->isOverrideActive() || $this->isForceHeatingActive()) {
             $varID = @$this->GetIDForIdent("actual_heating_phase");
             if ($varID !== false) {
                 $this->SetValue("actual_heating_phase", 0);
-                IPS_LogMessage("Raumregelung", "actual_heating_phase → 0 (Override)");
+                $this->LogMessage("Raumregelung: actual_heating_phase → 0 (Override)", KL_MESSAGE);
+            }
+            return;
+        }
+
+        // Bei aktiver Heizsperre: Phase = Frostschutz (2)
+        if ($this->isHeatingBlocked()) {
+            $varID = @$this->GetIDForIdent("actual_heating_phase");
+            if ($varID !== false) {
+                $this->SetValue("actual_heating_phase", 2);
+                $this->LogMessage("Raumregelung: actual_heating_phase → 2 (Heizstopp/Frostschutz)", KL_MESSAGE);
             }
             return;
         }
@@ -1732,7 +1851,7 @@ PEM;
         $varID = @$this->GetIDForIdent("actual_heating_phase");
         if ($varID !== false) {
             $this->SetValue("actual_heating_phase", $phase);
-            IPS_LogMessage("Raumregelung", "actual_heating_phase → {$phase}");
+            $this->LogMessage("Raumregelung: actual_heating_phase → {$phase}", KL_MESSAGE);
         }
     }
 
