@@ -258,8 +258,14 @@
       ]
     },
     {
-      "type": "Label",
-      "caption": ""
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "HeatingBlock_Status",
+          "caption": "Variable: Extern (Heizstopp / Heizstart) einblenden"
+        }
+      ]
     },
     {
       "type": "Label",
@@ -271,24 +277,11 @@
     },
     {
       "type": "Label",
-      "caption": "Lizenz: Erweiterte Pro-Funktionen",
-      "bold": true
-    },
-    {
-      "type": "ValidationTextBox",
-      "name": "LicenseKey",
-      "caption": "Lizenzschlüssel",
-      "width": "1600px",
-      "multiline": true,
-      "rows": 3
-    },
-    {
-      "type": "Label",
       "caption": ""
     },
     {
       "type": "Label",
-      "caption": "1. Übersteuerung: Heizen erzwingen",
+      "caption": "5. Übersteuerung: Heizen erzwingen",
       "bold": true
     },
     {
@@ -323,7 +316,7 @@
           "items": [
             {
               "type": "Label",
-              "caption": "2. Heizstopp: Heizung über externe Variable sperren (hat höchste Priorität)",
+              "caption": "6. Heizstopp: Heizung über externe Variable sperren (hat höchste Priorität)",
               "bold": true
             },
             {
@@ -345,7 +338,7 @@
           "items": [
             {
               "type": "Label",
-              "caption": "3. Heizstart: Heizung über externe Variable erzwingen (wird durch Heizstopp übersteuert)",
+              "caption": "7. Heizstart: Heizung über externe Variable erzwingen (wird durch Heizstopp übersteuert)",
               "bold": true
             },
             {
@@ -364,14 +357,8 @@
       "caption": ""
     },
     {
-      "type": "RowLayout",
-      "items": [
-        {
-          "type": "CheckBox",
-          "name": "HeatingBlock_Status",
-          "caption": "Variable: Extern (Heizstopp / Heizstart) einblenden"
-        }
-      ]
+      "type": "Label",
+      "caption": ""
     }
   ],
   "actions": [

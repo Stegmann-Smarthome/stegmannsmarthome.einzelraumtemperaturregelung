@@ -49,8 +49,6 @@ class Aktor extends IPSModule
 
         $this->RegisterPropertyInteger("ForceHeating_VarID", 0);
 
-        $this->RegisterPropertyString("LicenseKey", "");
-
         // Echo-Schutz: Merker für letzte Aktor-Schreibquelle/Zeit
         $this->RegisterAttributeString("LastActorWriteSource", "");
         $this->RegisterAttributeInteger("LastActorWriteTime", 0);
@@ -90,22 +88,7 @@ class Aktor extends IPSModule
             $hideNames = ['ID_Aktor'];
         }
 
-        // Pro-Features ohne gültige Lizenz ausblenden
-        $hideCaptions = [];
-        if (!$this->isLicenseValid()) {
-            $hideNames[] = 'Show_Override_Button';
-            $hideNames[] = 'Auto_Disable_Override_Last_Lowering';
-            $hideNames[] = 'HeatingBlock_VarID';
-            $hideNames[] = 'HeatingBlock_Status';
-            $hideNames[] = 'ForceHeating_VarID';
-            $hideCaptions[] = '1. Übersteuerung';
-            $hideCaptions[] = '2. Heizstopp';
-            $hideCaptions[] = '3. Heizstart';
-            $hideCaptions[] = 'Heizstopp: Auswahl';
-            $hideCaptions[] = 'Heizstart: Auswahl';
-        }
-
-        $filterElements = function (array $elements) use (&$filterElements, $hideNames, $hideCaptions) {
+        $filterElements = function (array $elements) use (&$filterElements, $hideNames) {
             $result = [];
             foreach ($elements as $el) {
                 if (!is_array($el)) {
@@ -115,15 +98,6 @@ class Aktor extends IPSModule
                 // Einzelelemente mit name direkt entfernen
                 if (isset($el['name']) && in_array($el['name'], $hideNames, true)) {
                     continue;
-                }
-
-                // Labels anhand Caption-Prefix ausblenden (Pro-Features)
-                if (!empty($hideCaptions) && ($el['type'] ?? '') === 'Label' && isset($el['caption'])) {
-                    foreach ($hideCaptions as $prefix) {
-                        if (str_starts_with($el['caption'], $prefix)) {
-                            continue 2;
-                        }
-                    }
                 }
 
                 // Verschachtelte Layouts rekursiv filtern
@@ -1188,56 +1162,14 @@ class Aktor extends IPSModule
         $this->WriteAttributeString("LastActorWriteSource", "");
     }
 
-    private function isLicenseValid(): bool
-    {
-        $key = trim($this->ReadPropertyString("LicenseKey"));
-        if ($key === '') {
-            return false;
-        }
-        $licensee = strtolower(trim(IPS_GetLicensee()));
-        if ($licensee === '') {
-            return false;
-        }
-
-        $publicKey = <<<'PEM'
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvOTrWVggn+5zIl3xpwxN
-YC7QZ5fSAPRIQrhBWGZi490wwamZ1c8kZTdbMxfs8JKgWXNMzV8E+NijJX4ZGVgW
-Pwv7B0W753XGO+1JedNlXgQzgmPT/sVH7DY161yafvbItt+L2BFZy4Llrnbrk0ld
-JfplA+pH2ZtzuW4b2ZeNd+JX/TMXD9KBe5xkafPWcaCMAff7qf912IQQyPNSDOx1
-Twt9T+mHcSgy+nuzL3S8PS2lW24SotdRkdCW/UKsuemNJ4JzvGUhRrLOrc6LLDiS
-xT5VIJ61AxwfXYCB/xTiJVtsZEkrncSogYMXXSbUtbxpQ6KTjgGNF1p0m0OJgvxE
-1wIDAQAB
------END PUBLIC KEY-----
-PEM;
-
-        $signature = @base64_decode($key, true);
-        if ($signature === false) {
-            return false;
-        }
-
-        $pubKeyRes = openssl_pkey_get_public($publicKey);
-        if (!$pubKeyRes) {
-            return false;
-        }
-
-        return (openssl_verify($licensee, $signature, $pubKeyRes, OPENSSL_ALGO_SHA256) === 1);
-    }
-
     private function isHeatingBlocked(): bool
     {
-        if (!$this->isLicenseValid()) {
-            return false;
-        }
         $varID = (int)$this->ReadPropertyInteger("HeatingBlock_VarID");
         return ($varID > 0 && IPS_VariableExists($varID) && (bool)GetValue($varID));
     }
 
     private function isForceHeatingActive(): bool
     {
-        if (!$this->isLicenseValid()) {
-            return false;
-        }
         // Heizstopp hat Vorrang: wenn Heizsperre aktiv, kein erzwungenes Heizen
         if ($this->isHeatingBlocked()) {
             return false;
