@@ -2,14 +2,14 @@
     "translations": {
         "de": {
             "Actual temperature":"Ist-Temperatur",
-            "Heating temperature":"Soll-Temperatur",
-            "Lowering temperature": "Absenken",
+            "Heating temperature":"Heiztemperatur",
+            "Lowering temperature": "Absenktemperatur",
             "Basic temperature":"Absenkung",
             "Heating phase":"Heizphase",
             "Year":"Jahr",
             "Total":"Gesamt",
             "opening contact":"Kontakt",
-            "Override":"Übersteuern",
+            "Override":"Dauerheizen",
             "External heating control":"Extern"
         }
     }

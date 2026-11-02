@@ -4,10 +4,6 @@
     ],
     "actions": [
     {
-      "type": "Label",
-      "caption": "Dieses Modul wurde erstellt von:"
-    },
-    {
       "type": "RowLayout",
       "items": [
         {
@@ -46,18 +42,77 @@
           "type": "ColumnLayout",
           "items": [
             {
-              "type": "Button",
-              "caption": "www.stegmann-smarthome.de",
-              "onClick": "echo 'https://www.stegmann-smarthome.de';",
-              "width": "300px"
+              "type": "RowLayout",
+              "items": [
+                {
+                  "type": "Button",
+                  "caption": "www.stegmann-smarthome.de",
+                  "onClick": "echo 'https://www.stegmann-smarthome.de';",
+                  "width": "300px"
+                },
+                {
+                  "type": "Label",
+                  "caption": "",
+                  "width": "16px"
+                },
+                {
+                  "type": "Button",
+                  "caption": "Lizenz",
+                  "onClick": "echo 'https://github.com/Stegmann-Smarthome/stegmannsmarthome.einzelraumtemperaturregelung/blob/stable/LICENSE.md';",
+                  "width": "160px"
+                }
+              ]
             },
             {
-              "type": "Button",
-              "caption": "info@stegmann-smarthome.de",
-              "onClick": "echo 'mailto:info@stegmann-smarthome.de';",
-              "width": "300px"
+              "type": "RowLayout",
+              "items": [
+                {
+                  "type": "Button",
+                  "caption": "info@stegmann-smarthome.de",
+                  "onClick": "echo 'mailto:info@stegmann-smarthome.de';",
+                  "width": "300px"
+                },
+                {
+                  "type": "Label",
+                  "caption": "",
+                  "width": "16px"
+                },
+                {
+                  "type": "Button",
+                  "caption": "WhatsApp",
+                  "onClick": "echo 'https://wa.me/+4991316824750';",
+                  "width": "160px"
+                }
+              ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "45px"
+        },
+        {
+            "type": "Image",
+            "onClick": "echo 'https://www.paypal.com/donate/?hosted_button_id=T6F5B25G6FBF2';",
+                "image": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxNi4wLjQsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DQo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB3aWR0aD0iMTI0cHgiIGhlaWdodD0iMzNweCIgdmlld0JveD0iMCAwIDEyNCAzMyIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMTI0IDMzIiB4bWw6c3BhY2U9InByZXNlcnZlIj4NCjxwYXRoIGZpbGw9IiMyNTNCODAiIGQ9Ik00Ni4yMTEsNi43NDloLTYuODM5Yy0wLjQ2OCwwLTAuODY2LDAuMzQtMC45MzksMC44MDJsLTIuNzY2LDE3LjUzN2MtMC4wNTUsMC4zNDYsMC4yMTMsMC42NTgsMC41NjQsMC42NTgNCgloMy4yNjVjMC40NjgsMCwwLjg2Ni0wLjM0LDAuOTM5LTAuODAzbDAuNzQ2LTQuNzNjMC4wNzItMC40NjMsMC40NzEtMC44MDMsMC45MzgtMC44MDNoMi4xNjVjNC41MDUsMCw3LjEwNS0yLjE4LDcuNzg0LTYuNQ0KCWMwLjMwNi0xLjg5LDAuMDEzLTMuMzc1LTAuODcyLTQuNDE1QzUwLjIyNCw3LjM1Myw0OC41LDYuNzQ5LDQ2LjIxMSw2Ljc0OXogTTQ3LDEzLjE1NGMtMC4zNzQsMi40NTQtMi4yNDksMi40NTQtNC4wNjIsMi40NTQNCgloLTEuMDMybDAuNzI0LTQuNTgzYzAuMDQzLTAuMjc3LDAuMjgzLTAuNDgxLDAuNTYzLTAuNDgxaDAuNDczYzEuMjM1LDAsMi40LDAsMy4wMDIsMC43MDRDNDcuMDI3LDExLjY2OCw0Ny4xMzcsMTIuMjkyLDQ3LDEzLjE1NHoiDQoJLz4NCjxwYXRoIGZpbGw9IiMyNTNCODAiIGQ9Ik02Ni42NTQsMTMuMDc1aC0zLjI3NWMtMC4yNzksMC0wLjUyLDAuMjA0LTAuNTYzLDAuNDgxbC0wLjE0NSwwLjkxNmwtMC4yMjktMC4zMzINCgljLTAuNzA5LTEuMDI5LTIuMjktMS4zNzMtMy44NjgtMS4zNzNjLTMuNjE5LDAtNi43MSwyLjc0MS03LjMxMiw2LjU4NmMtMC4zMTMsMS45MTgsMC4xMzIsMy43NTIsMS4yMiw1LjAzMQ0KCWMwLjk5OCwxLjE3NiwyLjQyNiwxLjY2Niw0LjEyNSwxLjY2NmMyLjkxNiwwLDQuNTMzLTEuODc1LDQuNTMzLTEuODc1bC0wLjE0NiwwLjkxYy0wLjA1NSwwLjM0OCwwLjIxMywwLjY2LDAuNTYyLDAuNjZoMi45NQ0KCWMwLjQ2OSwwLDAuODY1LTAuMzQsMC45MzktMC44MDNsMS43Ny0xMS4yMDlDNjcuMjcxLDEzLjM4OCw2Ny4wMDQsMTMuMDc1LDY2LjY1NCwxMy4wNzV6IE02Mi4wODksMTkuNDQ5DQoJYy0wLjMxNiwxLjg3MS0xLjgwMSwzLjEyNy0zLjY5NSwzLjEyN2MtMC45NTEsMC0xLjcxMS0wLjMwNS0yLjE5OS0wLjg4M2MtMC40ODQtMC41NzQtMC42NjgtMS4zOTEtMC41MTQtMi4zMDENCgljMC4yOTUtMS44NTUsMS44MDUtMy4xNTIsMy42Ny0zLjE1MmMwLjkzLDAsMS42ODYsMC4zMDksMi4xODQsMC44OTJDNjIuMDM0LDE3LjcyMSw2Mi4yMzIsMTguNTQzLDYyLjA4OSwxOS40NDl6Ii8+DQo8cGF0aCBmaWxsPSIjMjUzQjgwIiBkPSJNODQuMDk2LDEzLjA3NWgtMy4yOTFjLTAuMzE0LDAtMC42MDksMC4xNTYtMC43ODcsMC40MTdsLTQuNTM5LDYuNjg2bC0xLjkyNC02LjQyNQ0KCWMtMC4xMjEtMC40MDItMC40OTItMC42NzgtMC45MTItMC42NzhoLTMuMjM0Yy0wLjM5MywwLTAuNjY2LDAuMzg0LTAuNTQxLDAuNzU0bDMuNjI1LDEwLjYzOGwtMy40MDgsNC44MTENCgljLTAuMjY4LDAuMzc5LDAuMDAyLDAuOSwwLjQ2NSwwLjloMy4yODdjMC4zMTIsMCwwLjYwNC0wLjE1MiwwLjc4MS0wLjQwOEw4NC41NjQsMTMuOTdDODQuODI2LDEzLjU5Miw4NC41NTcsMTMuMDc1LDg0LjA5NiwxMy4wNzV6DQoJIi8+DQo8cGF0aCBmaWxsPSIjMTc5QkQ3IiBkPSJNOTQuOTkyLDYuNzQ5aC02Ljg0Yy0wLjQ2NywwLTAuODY1LDAuMzQtMC45MzgsMC44MDJsLTIuNzY2LDE3LjUzN2MtMC4wNTUsMC4zNDYsMC4yMTMsMC42NTgsMC41NjIsMC42NTgNCgloMy41MWMwLjMyNiwwLDAuNjA1LTAuMjM4LDAuNjU2LTAuNTYybDAuNzg1LTQuOTcxYzAuMDcyLTAuNDYzLDAuNDcxLTAuODAzLDAuOTM4LTAuODAzaDIuMTY0YzQuNTA2LDAsNy4xMDUtMi4xOCw3Ljc4NS02LjUNCgljMC4zMDctMS44OSwwLjAxMi0zLjM3NS0wLjg3My00LjQxNUM5OS4wMDQsNy4zNTMsOTcuMjgxLDYuNzQ5LDk0Ljk5Miw2Ljc0OXogTTk1Ljc4MSwxMy4xNTRjLTAuMzczLDIuNDU0LTIuMjQ4LDIuNDU0LTQuMDYyLDIuNDU0DQoJaC0xLjAzMWwwLjcyNS00LjU4M2MwLjA0My0wLjI3NywwLjI4MS0wLjQ4MSwwLjU2Mi0wLjQ4MWgwLjQ3M2MxLjIzNCwwLDIuNCwwLDMuMDAyLDAuNzA0DQoJQzk1LjgwOSwxMS42NjgsOTUuOTE4LDEyLjI5Miw5NS43ODEsMTMuMTU0eiIvPg0KPHBhdGggZmlsbD0iIzE3OUJENyIgZD0iTTExNS40MzQsMTMuMDc1aC0zLjI3M2MtMC4yODEsMC0wLjUyLDAuMjA0LTAuNTYyLDAuNDgxbC0wLjE0NSwwLjkxNmwtMC4yMy0wLjMzMg0KCWMtMC43MDktMS4wMjktMi4yODktMS4zNzMtMy44NjctMS4zNzNjLTMuNjE5LDAtNi43MDksMi43NDEtNy4zMTEsNi41ODZjLTAuMzEyLDEuOTE4LDAuMTMxLDMuNzUyLDEuMjE5LDUuMDMxDQoJYzEsMS4xNzYsMi40MjYsMS42NjYsNC4xMjUsMS42NjZjMi45MTYsMCw0LjUzMy0xLjg3NSw0LjUzMy0xLjg3NWwtMC4xNDYsMC45MWMtMC4wNTUsMC4zNDgsMC4yMTMsMC42NiwwLjU2NCwwLjY2aDIuOTQ5DQoJYzAuNDY3LDAsMC44NjUtMC4zNCwwLjkzOC0wLjgwM2wxLjc3MS0xMS4yMDlDMTE2LjA1MywxMy4zODgsMTE1Ljc4NSwxMy4wNzUsMTE1LjQzNCwxMy4wNzV6IE0xMTAuODY5LDE5LjQ0OQ0KCWMtMC4zMTQsMS44NzEtMS44MDEsMy4xMjctMy42OTUsMy4xMjdjLTAuOTQ5LDAtMS43MTEtMC4zMDUtMi4xOTktMC44ODNjLTAuNDg0LTAuNTc0LTAuNjY2LTEuMzkxLTAuNTE0LTIuMzAxDQoJYzAuMjk3LTEuODU1LDEuODA1LTMuMTUyLDMuNjctMy4xNTJjMC45MywwLDEuNjg2LDAuMzA5LDIuMTg0LDAuODkyQzExMC44MTYsMTcuNzIxLDExMS4wMTQsMTguNTQzLDExMC44NjksMTkuNDQ5eiIvPg0KPHBhdGggZmlsbD0iIzE3OUJENyIgZD0iTTExOS4yOTUsNy4yM2wtMi44MDcsMTcuODU4Yy0wLjA1NSwwLjM0NiwwLjIxMywwLjY1OCwwLjU2MiwwLjY1OGgyLjgyMmMwLjQ2OSwwLDAuODY3LTAuMzQsMC45MzktMC44MDMNCglsMi43NjgtMTcuNTM2YzAuMDU1LTAuMzQ2LTAuMjEzLTAuNjU5LTAuNTYyLTAuNjU5aC0zLjE2QzExOS41NzgsNi43NDksMTE5LjMzOCw2Ljk1MywxMTkuMjk1LDcuMjN6Ii8+DQo8cGF0aCBmaWxsPSIjMjUzQjgwIiBkPSJNNy4yNjYsMjkuMTU0bDAuNTIzLTMuMzIybC0xLjE2NS0wLjAyN0gxLjA2MUw0LjkyNywxLjI5MkM0LjkzOSwxLjIxOCw0Ljk3OCwxLjE0OSw1LjAzNSwxLjENCgljMC4wNTcsLTAuMDQ5LDAuMTMtMC4wNzYsMC4yMDYtMC4wNzZoOS4zOGMzLjExNCwwLDUuMjYzLDAuNjQ4LDYuMzg1LDEuOTI3YzAuNTI2LDAuNiwwLjg2MSwxLjIyNywxLjAyMywxLjkxNw0KCWMwLjE3LDAuNzI0LDAuMTczLDEuNTg5LDAuMDA3LDIuNjQ0bC0wLjAxMiwwLjA3N3YwLjY3NmwwLjUyNiwwLjI5OGMwLjQ0MywwLjIzNSwwLjc5NSwwLjUwNCwxLjA2NSwwLjgxMg0KCWMwLjQ1LDAuNTEzLDAuNzQxLDEuMTY1LDAuODY0LDEuOTM4YzAuMTI3LDAuNzk1LDAuMDg1LDEuNzQxLTAuMTIzLDIuODEyYy0wLjI0LDEuMjMyLTAuNjI4LDIuMzA1LTEuMTUyLDMuMTgzDQoJYy0wLjQ4MiwwLjgwOS0xLjA5NiwxLjQ4LTEuODI1LDJjLTAuNjk2LDAuNDk0LTEuNTIzLDAuODY5LTIuNDU4LDEuMTA5Yy0wLjkwNiwwLjIzNi0xLjkzOSwwLjM1NS0zLjA3MiwwLjM1NWgtMC43Mw0KCWMtMC41MjIsMC0xLjAyOSwwLjE4OC0xLjQyNywwLjUyNWMtMC4zOTksMC4zNDQtMC42NjMsMC44MTQtMC43NDQsMS4zMjhsLTAuMDU1LDAuMjk5bC0wLjkyNCw1Ljg1NWwtMC4wNDIsMC4yMTUNCgljLTAuMDExLDAuMDY4LTAuMDMsMC4xMDItMC4wNTgsMC4xMjVjLTAuMDI1LDAuMDIxLTAuMDYxLDAuMDM1LTAuMDk2LDAuMDM1SDcuMjY2eiIvPg0KPHBhdGggZmlsbD0iIzE3OUJENyIgZD0iTTIzLjA0OCw3LjY2N0wyMy4wNDgsNy42NjdMMjMuMDQ4LDcuNjY3Yy0wLjAyOCwwLjE3OS0wLjA2LDAuMzYyLTAuMDk2LDAuNTUNCgljLTEuMjM3LDYuMzUxLTUuNDY5LDguNTQ1LTEwLjg3NCw4LjU0NUg5LjMyNmMtMC42NjEsMC0xLjIxOCwwLjQ4LTEuMzIxLDEuMTMybDAsMGwwLDBMNi41OTYsMjYuODNsLTAuMzk5LDIuNTMzDQoJYy0wLjA2NywwLjQyOCwwLjI2MywwLjgxNCwwLjY5NSwwLjgxNGg0Ljg4MWMwLjU3OCwwLDEuMDY5LTAuNDIsMS4xNi0wLjk5bDAuMDQ4LTAuMjQ4bDAuOTE5LTUuODMybDAuMDU5LTAuMzINCgljMC4wOS0wLjU3MiwwLjU4Mi0wLjk5MiwxLjE2LTAuOTkyaDAuNzNjNC43MjksMCw4LjQzMS0xLjkyLDkuNTEzLTcuNDc2YzAuNDUyLTIuMzIxLDAuMjE4LTQuMjU5LTAuOTc4LTUuNjIyDQoJQzI0LjAyMiw4LjI4NiwyMy41NzMsNy45NDUsMjMuMDQ4LDcuNjY3eiIvPg0KPHBhdGggZmlsbD0iIzIyMkQ2NSIgZD0iTTIxLjc1NCw3LjE1MWMtMC4xODktMC4wNTUtMC4zODQtMC4xMDUtMC41ODQtMC4xNWMtMC4yMDEtMC4wNDQtMC40MDctMC4wODMtMC42MTktMC4xMTcNCgljLTAuNzQyLTAuMTItMS41NTUtMC4xNzctMi40MjYtMC4xNzdoLTcuMzUyYy0wLjE4MSwwLTAuMzUzLDAuMDQxLTAuNTA3LDAuMTE1QzkuOTI3LDYuOTg1LDkuNjc1LDcuMzA2LDkuNjE0LDcuNjk5TDguMDUsMTcuNjA1DQoJbC0wLjA0NSwwLjI4OWMwLjEwMy0wLjY1MiwwLjY2LTEuMTMyLDEuMzIxLTEuMTMyaDIuNzUyYzUuNDA1LDAsOS42MzctMi4xOTUsMTAuODc0LTguNTQ1YzAuMDM3LTAuMTg4LDAuMDY4LTAuMzcxLDAuMDk2LTAuNTUNCgljLTAuMzEzLTAuMTY2LTAuNjUyLTAuMzA4LTEuMDE3LTAuNDI5QzIxLjk0MSw3LjIwOCwyMS44NDgsNy4xNzksMjEuNzU0LDcuMTUxeiIvPg0KPHBhdGggZmlsbD0iIzI1M0I4MCIgZD0iTTkuNjE0LDcuNjk5YzAuMDYxLTAuMzkzLDAuMzEzLTAuNzE0LDAuNjUyLTAuODc2YzAuMTU1LTAuMDc0LDAuMzI2LTAuMTE1LDAuNTA3LTAuMTE1aDcuMzUyDQoJYzAuODcxLDAsMS42ODQsMC4wNTcsMi40MjYsMC4xNzdjMC4yMTIsMC4wMzQsMC40MTgsMC4wNzMsMC42MTksMC4xMTdjMC4yLDAuMDQ1LDAuMzk1LDAuMDk1LDAuNTg0LDAuMTUNCgljMC4wOTQsMC4wMjgsMC4xODcsMC4wNTcsMC4yNzgsMC4wODZjMC4zNjUsMC4xMjEsMC43MDQsMC4yNjQsMS4wMTcsMC40MjljMC4zNjgtMi4zNDctMC4wMDMtMy45NDUtMS4yNzItNS4zOTINCglDMjAuMzc4LDAuNjgyLDE3Ljg1MywwLDE0LjYyMiwwaC05LjM4Yy0wLjY2LDAtMS4yMjMsMC40OC0xLjMyNSwxLjEzM0wwLjAxLDI1Ljg5OGMtMC4wNzcsMC40OSwwLjMwMSwwLjkzMiwwLjc5NSwwLjkzMmg1Ljc5MQ0KCWwxLjQ1NC05LjIyNUw5LjYxNCw3LjY5OXoiLz4NCjwvc3ZnPg0K",
+            "width": "160px",
+            "height": "43px"
+        },
+        {
+          "type": "Label",
+          "caption": "",
+          "width": "52px"
+        },
+        {
+          "type": "Label",
+          "caption": "Für die nicht-kommerzielle Nutzung ist dieses Modul kostenfrei. Wer den Autor unterstützen möchte, kann dies gerne mit einer Spende tun. Die Spenden kommen der Weiterentwicklung und Pflege des Moduls zugute.",
+          "width": "790px"
         }
       ]
     }

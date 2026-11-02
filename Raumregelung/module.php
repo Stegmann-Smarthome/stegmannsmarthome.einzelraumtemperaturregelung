@@ -7,22 +7,10 @@ class Aktor extends IPSModule
         parent::Create();
 
         ##############################
-        // 1. Soll-Temperatur-Variablen (Slider)
-        $this->RegisterVariableFloat(
-            "set_heating_temperature",
-            $this->Translate("Heating temperature"),
-            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 12, 'MAX' => 25],
-            1
-        );
+        // 1. + 2. Heiz- und Absenk-Temperatur-Variablen (Slider)
+        //    Verwendungstyp wird später je nach Phase in updateTileTargetVariable() gesetzt
+        $this->registerTemperatureSliders("set_heating_temperature");
         $this->EnableAction("set_heating_temperature");
-
-        // 2. Absenk-Temperatur-Variablen (Slider)
-        $this->RegisterVariableFloat(
-            "set_lowering_temperature",
-            $this->Translate("Lowering temperature"),
-            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => 0, 'MIN' => 10, 'MAX' => 25],
-            2
-        );
         $this->EnableAction("set_lowering_temperature");
 
         ##############################
@@ -48,6 +36,16 @@ class Aktor extends IPSModule
         $this->RegisterPropertyBoolean("HeatingBlock_Status", false);
 
         $this->RegisterPropertyInteger("ForceHeating_VarID", 0);
+
+        // Automatische Heizquellen-Erkennung (Heizung läuft, Temperatur steigt nicht)
+        $this->RegisterPropertyBoolean("AutoDetect_Enabled", false);
+        $this->RegisterPropertyInteger("AutoDetect_RunMinutes", 15);
+        $this->RegisterPropertyFloat("AutoDetect_MinRise", 0.3);
+        $this->RegisterPropertyInteger("AutoDetect_RetryMinutes", 60);
+        $this->RegisterPropertyBoolean("AutoDetect_AutoReset", false);
+        $this->RegisterAttributeInteger("AD_StartTime", 0);
+        $this->RegisterAttributeFloat("AD_StartTemp", 0.0);
+        $this->RegisterAttributeInteger("AD_FaultUntil", 0);
 
         // Echo-Schutz: Merker für letzte Aktor-Schreibquelle/Zeit
         $this->RegisterAttributeString("LastActorWriteSource", "");
@@ -424,6 +422,12 @@ class Aktor extends IPSModule
         }
 
         // 4.3 Anzeige der externen Heizsteuerung (Heizstopp / Heizstart), falls aktiviert
+        $autoDetect = $this->ReadPropertyBoolean("AutoDetect_Enabled");
+        if (!$autoDetect) {
+            $this->WriteAttributeInteger("AD_StartTime", 0);
+            $this->WriteAttributeInteger("AD_FaultUntil", 0);
+        }
+
         if ($this->ReadPropertyBoolean("HeatingBlock_Status")) {
             if (@$this->GetIDForIdent("heatingblock_status") === false) {
                 $id = $this->RegisterVariableInteger(
@@ -511,6 +515,25 @@ class Aktor extends IPSModule
             }
         }
 
+        // 4.4 Status der automatischen Heizquellen-Erkennung (unabhängig von externen Variablen)
+        if ($autoDetect) {
+            // Aufzählung: bei Störung "OK" und "Störung", sonst nur "OK" (Klick auf "OK" quittiert)
+            $this->RegisterVariableInteger(
+                "autodetect_status",
+                $this->Translate("Status"),
+                $this->getAutoDetectPresentation($this->isAutoDetectFaultActive()),
+                9
+            );
+            // Quittieren: Status auf 0 setzen
+            $this->EnableAction("autodetect_status");
+            $this->updateAutoDetectStatusVar();
+        } else {
+            $id = @$this->GetIDForIdent("autodetect_status");
+            if ($id !== false) {
+                IPS_DeleteVariable($id);
+            }
+        }
+
         // Aktor-Variable (Solltemperatur) auf VM_UPDATE überwachen
         $controlType = (int)$this->ReadPropertyInteger('HeatingControlType');
         if ($controlType === 0) {
@@ -549,6 +572,9 @@ class Aktor extends IPSModule
                 $this->LogMessage("Raumregelung: Initialer Fensterstatus: " . ($anyOpen ? "offen" : "geschlossen"), KL_MESSAGE);
             }
         }
+
+        // 7. Sollwert-Variable für die Kachel initial setzen (Create setzt immer Heiztemperatur als aktiv)
+        $this->updateTileTargetVariable();
     }
 
     public function ApplyTemperatureProfile()
@@ -596,6 +622,7 @@ class Aktor extends IPSModule
 
         $isTempVarID = $this->ReadPropertyInteger("Is_Temperature");
         if ($Message === VM_UPDATE && $SenderID === $isTempVarID) {
+            $this->evaluateAutoDetect();
             $this->updateTwoPointSwitch();
             return;
         }
@@ -1162,10 +1189,161 @@ class Aktor extends IPSModule
         $this->WriteAttributeString("LastActorWriteSource", "");
     }
 
-    private function isHeatingBlocked(): bool
+    private function isExternalHeatingBlocked(): bool
     {
         $varID = (int)$this->ReadPropertyInteger("HeatingBlock_VarID");
         return ($varID > 0 && IPS_VariableExists($varID) && (bool)GetValue($varID));
+    }
+
+    private function isAutoDetectFaultActive(): bool
+    {
+        return ($this->ReadPropertyBoolean("AutoDetect_Enabled")
+            && $this->ReadAttributeInteger("AD_FaultUntil") > time());
+    }
+
+    private function isHeatingBlocked(): bool
+    {
+        return $this->isExternalHeatingBlocked() || $this->isAutoDetectFaultActive();
+    }
+
+    private function getAutoDetectPresentation(bool $fault): array
+    {
+        $options = [[
+            'Value'      => 0,
+            'Caption'    => 'OK',
+            'IconActive' => true,
+            'IconValue'  => 'circle-check',
+            'Color'      => 0x00AA00
+        ]];
+        if ($fault) {
+            $options[] = [
+                'Value'      => 1,
+                'Caption'    => 'Störung',
+                'IconActive' => true,
+                'IconValue'  => 'triangle-exclamation',
+                'Color'      => 0xFF0000
+            ];
+        }
+        return [
+            'PRESENTATION' => '{52D9E126-D7D2-2CBB-5E62-4CF7BA7C5D82}', // Enumeration
+            'LAYOUT'       => 1,
+            'DISPLAY'      => 2,
+            'OPTIONS'      => json_encode($options)
+        ];
+    }
+
+    private function updateAutoDetectStatusVar(): void
+    {
+        $id = @$this->GetIDForIdent("autodetect_status");
+        if ($id === false || !IPS_VariableExists($id)) {
+            return;
+        }
+        $fault = $this->isAutoDetectFaultActive();
+        IPS_SetVariableCustomPresentation($id, $this->getAutoDetectPresentation($fault));
+        $this->SetValue("autodetect_status", $fault ? 1 : 0);
+    }
+
+    // Wärmeanforderung: Regler will aktuell heizen (Aktor/Gebläse sollte Wärme liefern)
+    private function isHeatDemandActive(float $ist): bool
+    {
+        $controlType = (int)$this->ReadPropertyInteger('HeatingControlType');
+
+        if ($controlType === 1) {
+            $switchActorID = (int)$this->ReadPropertyInteger("ID_SwitchAktor");
+            if ($switchActorID <= 0 || !IPS_VariableExists($switchActorID)) {
+                return false;
+            }
+            $current = (bool)GetValue($switchActorID);
+            return $this->ReadPropertyBoolean("Invert_SwitchAktor") ? !$current : $current;
+        }
+
+        if ($controlType === 0) {
+            $actorID = (int)$this->ReadPropertyInteger("ID_Aktor");
+            if ($actorID <= 0 || !IPS_VariableExists($actorID)) {
+                return false;
+            }
+            // Soll des Aktors über Ist und über Frostschutz → es wird Wärme angefordert
+            $target = (float)GetValue($actorID);
+            return ($target > $ist && $target > (float)$this->ReadPropertyFloat("FrostProtection"));
+        }
+
+        return false;
+    }
+
+    // Störung der Erwärmungskontrolle quittieren → Heizung wird wieder freigegeben
+    private function acknowledgeAutoDetectFault(): void
+    {
+        if ($this->ReadAttributeInteger("AD_FaultUntil") === 0) {
+            return;
+        }
+        $this->WriteAttributeInteger("AD_FaultUntil", 0);
+        $this->WriteAttributeInteger("AD_StartTime", 0);
+        $this->LogMessage("Raumregelung: Heizquellen-Erkennung – Störung quittiert, Heizung freigegeben", KL_MESSAGE);
+        $this->updateAutoDetectStatusVar();
+        $this->applyHeatingBlockState();
+    }
+
+    // Erkennt "Heizquelle aus": Anforderung besteht, Temperatur steigt aber nicht
+    private function evaluateAutoDetect(): void
+    {
+        if (!$this->ReadPropertyBoolean("AutoDetect_Enabled")) {
+            return;
+        }
+
+        $faultUntil = $this->ReadAttributeInteger("AD_FaultUntil");
+        if ($faultUntil > 0) {
+            if ($faultUntil > time()) {
+                return; // Störung aktiv, Wartezeit läuft
+            }
+            // Wartezeit vorbei → Heizung freigeben, neu messen
+            $this->WriteAttributeInteger("AD_FaultUntil", 0);
+            $this->WriteAttributeInteger("AD_StartTime", 0);
+            $this->LogMessage("Raumregelung: Heizquellen-Erkennung – Neuer Versuch, Heizung freigegeben", KL_MESSAGE);
+            $this->updateAutoDetectStatusVar();
+            $this->applyHeatingBlockState();
+            return;
+        }
+
+        $isTempVarID = (int)$this->ReadPropertyInteger("Is_Temperature");
+        if ($isTempVarID <= 0 || !IPS_VariableExists($isTempVarID)) {
+            return;
+        }
+        $ist = (float)GetValue($isTempVarID);
+
+        if ($this->isExternalHeatingBlocked() || !$this->isHeatDemandActive($ist)) {
+            $this->WriteAttributeInteger("AD_StartTime", 0);
+            return;
+        }
+
+        $start = $this->ReadAttributeInteger("AD_StartTime");
+        if ($start === 0) {
+            $this->WriteAttributeInteger("AD_StartTime", time());
+            $this->WriteAttributeFloat("AD_StartTemp", $ist);
+            return;
+        }
+
+        $minRise = (float)$this->ReadPropertyFloat("AutoDetect_MinRise");
+        if (($ist - $this->ReadAttributeFloat("AD_StartTemp")) >= $minRise) {
+            // Heizquelle liefert Wärme → neues Messfenster
+            $this->WriteAttributeInteger("AD_StartTime", time());
+            $this->WriteAttributeFloat("AD_StartTemp", $ist);
+            return;
+        }
+
+        $runSec = max(1, (int)$this->ReadPropertyInteger("AutoDetect_RunMinutes")) * 60;
+        if ((time() - $start) >= $runSec) {
+            if ($this->ReadPropertyBoolean("AutoDetect_AutoReset")) {
+                $retrySec = max(1, (int)$this->ReadPropertyInteger("AutoDetect_RetryMinutes")) * 60;
+                $this->WriteAttributeInteger("AD_FaultUntil", time() + $retrySec);
+            } else {
+                // Standard: Störung bleibt bis zur Quittierung durch den Benutzer bestehen
+                $this->WriteAttributeInteger("AD_FaultUntil", PHP_INT_MAX);
+            }
+            $this->WriteAttributeInteger("AD_StartTime", 0);
+            $this->LogMessage("Raumregelung: Störung – Heizung läuft, Temperatur steigt nicht (Heizquelle aus?)", KL_WARNING);
+            $this->updateAutoDetectStatusVar();
+            $this->applyHeatingBlockState();
+        }
     }
 
     private function isForceHeatingActive(): bool
@@ -1277,7 +1455,7 @@ class Aktor extends IPSModule
         if ($id === false || !IPS_VariableExists($id)) {
             return;
         }
-        if ($this->isHeatingBlocked()) {
+        if ($this->isExternalHeatingBlocked()) {
             $state = 1; // Heizstopp
         } elseif ($this->isForceHeatingActive()) {
             $state = 2; // Heizstart
@@ -1346,12 +1524,15 @@ class Aktor extends IPSModule
         if ($actionID !== false && isset($event['ScheduleActions'][$actionID])) {
             $a      = $event['ScheduleActions'][$actionID];
             $script = $a['ScriptText'] ?: ($a['ActionParameters']['SCRIPT'] ?? "");
+            $controlType = (int)$this->ReadPropertyInteger('HeatingControlType');
             if ($script !== "") {
-                // Aktionsskript ausführen (stellt den Aktor)
-                IPS_RunScriptText($script);
-                $this->LogMessage("Raumregelung: ExecutePlanAction: Aktion {$actionID} ausgeführt.", KL_MESSAGE);
+                if ($controlType === 0) {
+                    // Aktionsskript nur im Automatik-Modus ausführen (stellt den Aktor)
+                    IPS_RunScriptText($script);
+                    $this->LogMessage("Raumregelung: ExecutePlanAction: Aktion {$actionID} ausgeführt.", KL_MESSAGE);
+                }
 
-                // Phase SOFORT anzeigen + manuell gesetzte Phase merken
+                // Phase SOFORT anzeigen + manuell gesetzte Phase merken (unabhängig vom Regelungstyp)
                 $this->WriteAttributeInteger("LastPlanAction", (int)$actionID);
 
                 $varID = @$this->GetIDForIdent("actual_heating_phase");
@@ -1465,6 +1646,17 @@ class Aktor extends IPSModule
     public function RequestAction($Ident, $Value)
     {
         switch ($Ident) {
+            case "autodetect_status":
+                // Nur "OK" quittiert; eine Störung lässt sich nicht von Hand auslösen
+                if ((int)$Value === 0) {
+                    $this->acknowledgeAutoDetectFault();
+                }
+                return;
+
+            case "__AckAutoDetectFault":
+                $this->acknowledgeAutoDetectFault();
+                return;
+
             case "__MarkActorWriteByModule":
                 $this->markActorWriteFromModule();
                 return;
@@ -1728,6 +1920,31 @@ class Aktor extends IPSModule
         $this->LogMessage("Raumregelung: Override deaktiviert.", KL_MESSAGE);
     }
 
+    // Kachel (Thermostat-Ansicht) nutzt nur Variablen mit Verwendungstyp "Temperatur" als Sollwert.
+    // Daher erhält nur die Variable der aktiven Phase diesen Typ, damit die Kachel immer den gültigen Sollwert zeigt.
+    private function updateTileTargetVariable(): void
+    {
+        $activeIdent = ($this->getCurrentPlanActionId() === 1) ? "set_lowering_temperature" : "set_heating_temperature";
+        $this->registerTemperatureSliders($activeIdent);
+    }
+
+    // Registriert Heiz-/Absenk-Slider; nur $activeIdent bekommt Verwendungstyp Temperatur (0), die andere "Keine hiervon" (5)
+    private function registerTemperatureSliders(string $activeIdent): void
+    {
+        $this->RegisterVariableFloat(
+            "set_heating_temperature",
+            $this->Translate("Heating temperature"),
+            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => ($activeIdent === "set_heating_temperature") ? 0 : 5, 'MIN' => 12, 'MAX' => 25],
+            1
+        );
+        $this->RegisterVariableFloat(
+            "set_lowering_temperature",
+            $this->Translate("Lowering temperature"),
+            ['PRESENTATION' => VARIABLE_PRESENTATION_SLIDER, 'TEMPLATE' => VARIABLE_TEMPLATE_SLIDER_ROOM_TEMPERATURE, 'USAGE_TYPE' => ($activeIdent === "set_lowering_temperature") ? 0 : 5, 'MIN' => 10, 'MAX' => 25],
+            2
+        );
+    }
+
     /**
      * Ermittelt basierend auf Heizungs-/Urlaubs-Status und dem Wochenplan die
      * aktuelle Heizphase und schreibt sie in die Variable "actual_heating_phase".
@@ -1737,6 +1954,9 @@ class Aktor extends IPSModule
     {
         // Auto-Reset prüfen
         $this->ensureOverrideValidity();
+
+        // Sollwert-Variable für die Kachel an die aktive Phase anpassen
+        $this->updateTileTargetVariable();
 
         // Bei aktiver Übersteuerung / externem Erzwingen: Phase = Heizen (0)
         if ($this->isOverrideActive() || $this->isForceHeatingActive()) {
